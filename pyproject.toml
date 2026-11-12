@@ -12,3 +12,5 @@ dependencies = [
 [tool.flet]
 org = "com.makas"
 product = "PasswordGen"
+[tool.flet.icons]
+android = "icon.png"
