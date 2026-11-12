@@ -23,8 +23,6 @@ jobs:
 
       - name: Build with Buildozer
         run: |
-          # ПРИНУДИТЕЛЬНО ОЧИЩАЕМ КЭШ ПЕРЕД СБОРКОЙ
-          buildozer clean
           buildozer -v android debug
 
       - name: Upload APK
