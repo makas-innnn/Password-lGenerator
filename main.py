@@ -10,8 +10,7 @@ TEXTS = {
         "symbols": "Спецсимволы (!@#$)", "no_confusing": "Без похожих (l, 1, O)",
         "copied": "Пароль скопирован!", "nav_gen": "Генератор", "nav_info": "Инфо",
         "about_me": "Начинающий кодер, делаю что в кайф", "tg": "Telegram", "github": "GitHub",
-        "app_desc": "Безопасный офлайн-генератор.\nДанные не покидают устройство.",
-        "hide": "Скрыть", "show": "Показать"
+        "app_desc": "Безопасный офлайн-генератор.\nДанные не покидают устройство."
     },
     "en": {
         "title": "🔐 Password Generator", "app_title": "PasswordGen", "gen_btn": "Generate",
@@ -19,8 +18,7 @@ TEXTS = {
         "symbols": "Symbols (!@#$)", "no_confusing": "No confusing (l, 1, O)",
         "copied": "Password copied!", "nav_gen": "Generator", "nav_info": "Info",
         "about_me": "Beginner coder, doing what I love", "tg": "Telegram", "github": "GitHub",
-        "app_desc": "Secure offline generator.\nData never leaves your device.",
-        "hide": "Hide", "show": "Show"
+        "app_desc": "Secure offline generator.\nData never leaves your device."
     }
 }
 
@@ -57,34 +55,27 @@ def main(page: ft.Page):
     
     current_lang = "ru"
     current_theme = "dark"
-    real_password = "" # Здесь храним настоящий пароль
+    real_password = ""
 
     title_text = ft.Text(TEXTS[current_lang]["title"], size=28, weight=ft.FontWeight.BOLD)
     
-    # Поле пароля
+    # --- ВКЛАДКА ГЕНЕРАТОР ---
     pwd_field = ft.TextField(value="", read_only=True, text_align=ft.TextAlign.CENTER, text_size=20)
-    
-    # Глаз для скрытия/показа
-    eye_icon = ft.IconButton(ft.Icons.VISIBILITY, tooltip=TEXTS[current_lang]["hide"])
-    
-    # Полоска надежности
+    eye_icon = ft.IconButton(ft.Icons.VISIBILITY, tooltip="Скрыть/Показать")
     strength_bar = ft.ProgressBar(width=300, value=0, bgcolor=ft.Colors.GREY_800, color=ft.Colors.RED)
     str_text = ft.Text("", size=16, weight=ft.FontWeight.BOLD)
-
     slider = ft.Slider(min=8, max=32, divisions=24, value=16, label="Длина: {value}")
     len_label = ft.Text(f"{TEXTS[current_lang]['length']} 16", size=16)
-    
+
     def set_len(v): 
         slider.value = v
         len_label.value = f"{TEXTS[current_lang]['length']} {v}"
         page.update()
 
     len_btns = ft.Row([ft.Button(content=str(v), on_click=lambda e, v=v: set_len(v), width=45, height=40) for v in [8,12,16,20,32]], alignment=ft.MainAxisAlignment.CENTER, spacing=5)
-    
     sw_d = ft.Switch(label=TEXTS[current_lang]["digits"], value=True)
     sw_s = ft.Switch(label=TEXTS[current_lang]["symbols"], value=True)
     sw_c = ft.Switch(label=TEXTS[current_lang]["no_confusing"], value=False)
-
     btn_gen = ft.Button(content=TEXTS[current_lang]["gen_btn"], width=300, height=50, color=ft.Colors.WHITE)
     btn_copy = ft.Button(content=TEXTS[current_lang]["copy_btn"], width=300, height=50, color=ft.Colors.WHITE)
 
@@ -100,23 +91,16 @@ def main(page: ft.Page):
             eye_icon.icon = ft.Icons.VISIBILITY
         page.update()
 
-    eye_icon.on_click = toggle_visibility
-
     def generate(e):
         nonlocal real_password
         real_password = gen_pwd(int(slider.value), sw_d.value, sw_s.value, sw_c.value)
-        
-        # Если пароль был скрыт, обновляем звездочки
         if pwd_field.password:
             pwd_field.value = "•" * len(real_password)
         else:
             pwd_field.value = real_password
-            
-        # Обновляем полоску надежности
         sc, st, cl = analyze(real_password)
         strength_bar.value = sc / 100
         strength_bar.color = cl
-        
         status_text = ("Надежный" if st == "Strong" else ("Средний" if st == "Medium" else "Слабый")) if current_lang == "ru" else st
         str_text.value = f"Надежность: {sc}% ({status_text})" if current_lang == "ru" else f"Strength: {sc}% ({status_text})"
         str_text.color = cl
@@ -129,9 +113,14 @@ def main(page: ft.Page):
             page.snack_bar.open = True
             page.update()
 
+    eye_icon.on_click = toggle_visibility
     btn_gen.on_click = generate
     btn_copy.on_click = lambda e: page.run_task(copy, e)
 
+    pwd_row = ft.Row([pwd_field, eye_icon], alignment=ft.MainAxisAlignment.CENTER)
+    tab_gen = ft.Column([pwd_row, strength_bar, str_text, len_label, slider, len_btns, sw_d, sw_s, sw_c, btn_gen, btn_copy], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
+
+    # --- ВКЛАДКА ИНФО ---
     async def open_link(url):
         try: await page.launch_url(url, web_window_name="_blank")
         except: pass
@@ -141,16 +130,41 @@ def main(page: ft.Page):
     btn_tg = ft.Button(content=TEXTS[current_lang]["tg"], icon=ft.Icons.SEND, on_click=lambda e: page.run_task(open_link, "https://t.me/makas_1337"), width=300, bgcolor=ft.Colors.BLUE_400, color=ft.Colors.WHITE)
     btn_gh = ft.Button(content=TEXTS[current_lang]["github"], icon=ft.Icons.CODE, on_click=lambda e: page.run_task(open_link, "https://github.com/makas-innnn"), width=300, bgcolor=ft.Colors.GREY_800, color=ft.Colors.WHITE)
     app_desc = ft.Text(TEXTS[current_lang]["app_desc"], size=14, text_align=ft.TextAlign.CENTER)
+    
+    tab_info = ft.Column([ft.Icon(ft.Icons.PERSON, size=80), info_name, info_desc, btn_tg, btn_gh, ft.Divider(height=20, color="transparent"), ft.Text("PasswordGen v1.7", size=14, color=ft.Colors.GREY_400), app_desc], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
 
-    nav_bar = ft.NavigationBar(
-        selected_index=0, 
-        destinations=[
-            ft.NavigationBarDestination(icon=ft.Icons.HOME, label=TEXTS[current_lang]["nav_gen"]), 
-            ft.NavigationBarDestination(icon=ft.Icons.INFO, label=TEXTS[current_lang]["nav_info"])
-        ]
+    # --- КОНТЕЙНЕР ДЛЯ КОНТЕНТА ---
+    content_area = ft.Container(content=tab_gen, expand=True, alignment=ft.Alignment.CENTER)
+
+    # --- ВЕРХНИЕ ВКЛАДКИ (ВМЕСТО НИЖНЕГО МЕНЮ) ---
+    def switch_tab(e):
+        if e.control.selected_index == 0:
+            content_area.content = tab_gen
+        else:
+            content_area.content = tab_info
+        page.update()
+
+    # Создаем сами вкладки (Tabs)
+    tabs = ft.Tabs(
+        selected_index=0,
+        animation_duration=300,
+        on_change=switch_tab,
+        tabs=[
+            ft.Tab(text=TEXTS[current_lang]["nav_gen"], icon=ft.Icons.HOME),
+            ft.Tab(text=TEXTS[current_lang]["nav_info"], icon=ft.Icons.INFO),
+        ],
+        expand=1
     )
 
-    content_area = ft.Container(expand=True, alignment=ft.Alignment.CENTER)
+    # --- СБОРКА СТРАНИЦЫ ---
+    page.appbar = ft.AppBar(
+        title=ft.Text(TEXTS[current_lang]["app_title"]),
+        center_title=True,
+        actions=[
+            ft.IconButton(ft.Icons.PALETTE, on_click=lambda e: toggle_theme(e), tooltip="Сменить тему"),
+            ft.IconButton(ft.Icons.LANGUAGE, on_click=lambda e: toggle_lang(e), tooltip="Сменить язык")
+        ]
+    )
 
     def apply_theme():
         t = THEMES[current_theme]
@@ -163,7 +177,6 @@ def main(page: ft.Page):
         sw_d.active_color = t["slider"]
         sw_s.active_color = t["slider"]
         sw_c.active_color = t["slider"]
-        nav_bar.bgcolor = t["nav_bg"]
         page.appbar.bgcolor = t["nav_bg"]
         page.update()
 
@@ -182,8 +195,8 @@ def main(page: ft.Page):
         sw_c.label = TEXTS[current_lang]["no_confusing"]
         btn_gen.content = TEXTS[current_lang]["gen_btn"]
         btn_copy.content = TEXTS[current_lang]["copy_btn"]
-        nav_bar.destinations[0].label = TEXTS[current_lang]["nav_gen"]
-        nav_bar.destinations[1].label = TEXTS[current_lang]["nav_info"]
+        tabs.tabs[0].text = TEXTS[current_lang]["nav_gen"]
+        tabs.tabs[1].text = TEXTS[current_lang]["nav_info"]
         info_desc.value = TEXTS[current_lang]["about_me"]
         btn_tg.content = TEXTS[current_lang]["tg"]
         btn_gh.content = TEXTS[current_lang]["github"]
@@ -195,35 +208,10 @@ def main(page: ft.Page):
         current_lang = "en" if current_lang == "ru" else "ru"
         update_ui_texts()
 
-    def on_nav(e):
-        content_area.content = tab_gen if e.control.selected_index == 0 else tab_info
-        page.update()
-
-    page.appbar = ft.AppBar(
-        title=ft.Text(TEXTS[current_lang]["app_title"]),
-        center_title=True,
-        actions=[
-            ft.IconButton(ft.Icons.PALETTE, on_click=toggle_theme, tooltip="Сменить тему / Change Theme"),
-            ft.IconButton(ft.Icons.LANGUAGE, on_click=toggle_lang, tooltip="Сменить язык / Change Language")
-        ]
+    # Вставляем заголовок и вкладки на страницу
+    page.add(
+        ft.Column([title_text, tabs, content_area], expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     )
-
-    # Компоновка поля пароля и глаза в одну строку
-    pwd_row = ft.Row([pwd_field, eye_icon], alignment=ft.MainAxisAlignment.CENTER)
-
-    tab_gen = ft.Column([
-        title_text, pwd_row, strength_bar, str_text, len_label, slider, len_btns, 
-        sw_d, sw_s, sw_c, btn_gen, btn_copy
-    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
-    
-    tab_info = ft.Column([
-        ft.Icon(ft.Icons.PERSON, size=80), info_name, info_desc, btn_tg, btn_gh, 
-        ft.Divider(height=20, color="transparent"), ft.Text("PasswordGen v1.6", size=14, color=ft.Colors.GREY_400), app_desc
-    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
-
-    content_area.content = tab_gen
-    page.navigation_bar = nav_bar
-    page.add(content_area)
     
     apply_theme()
 
