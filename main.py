@@ -28,7 +28,7 @@ def main(page: ft.Page):
         read_only=True, 
         text_align=ft.TextAlign.CENTER,
         text_size=20,
-        border_color=ft.colors.BLUE
+        border_color=ft.Colors.BLUE
     )
 
     def generate(e):
@@ -37,6 +37,7 @@ def main(page: ft.Page):
 
     def copy(e):
         if password_field.value:
+            # Надежный способ копирования в буфер обмена для новых версий Flet
             page.set_clipboard(password_field.value)
             page.snack_bar = ft.SnackBar(ft.Text("Пароль скопирован!"))
             page.snack_bar.open = True
@@ -52,8 +53,8 @@ def main(page: ft.Page):
             on_click=generate, 
             width=300, 
             height=50, 
-            bgcolor=ft.colors.BLUE,
-            color=ft.colors.WHITE
+            bgcolor=ft.Colors.BLUE,
+            color=ft.Colors.WHITE
         ),
         ft.Divider(height=10, color="transparent"),
         ft.ElevatedButton(
@@ -61,8 +62,8 @@ def main(page: ft.Page):
             on_click=copy, 
             width=300, 
             height=50, 
-            bgcolor=ft.colors.GREEN,
-            color=ft.colors.WHITE
+            bgcolor=ft.Colors.GREEN,
+            color=ft.Colors.WHITE
         )
     )
 
