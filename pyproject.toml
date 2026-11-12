@@ -1,0 +1,14 @@
+[project]
+name = "PasswordGen"
+version = "1.0.0"
+description = "Безопасный генератор паролей"
+authors = [
+  {name = "makas-innnn", email = "your@email.com"}
+]
+dependencies = [
+  "flet"
+]
+
+[tool.flet]
+org = "com.makas"
+product = "PasswordGen"
