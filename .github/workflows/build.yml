@@ -22,8 +22,7 @@ jobs:
 
       - name: Build with Buildozer
         run: |
-          # Принудительно обновляем p4a до ветки develop прямо перед сборкой
-          pip install git+https://github.com/kivy/python-for-android.git@develop
+          pip install python-for-android --upgrade --force-reinstall
           buildozer -v android debug
 
       - name: Upload APK
