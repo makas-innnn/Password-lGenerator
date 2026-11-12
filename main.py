@@ -10,7 +10,8 @@ TEXTS = {
         "symbols": "Спецсимволы (!@#$)", "no_confusing": "Без похожих (l, 1, O)",
         "copied": "Пароль скопирован!", "nav_gen": "Генератор", "nav_info": "Инфо",
         "about_me": "Начинающий кодер, делаю что в кайф", "tg": "Telegram", "github": "GitHub",
-        "app_desc": "Безопасный офлайн-генератор.\nДанные не покидают устройство."
+        "app_desc": "Безопасный офлайн-генератор.\nДанные не покидают устройство.",
+        "hide": "Скрыть", "show": "Показать"
     },
     "en": {
         "title": "🔐 Password Generator", "app_title": "PasswordGen", "gen_btn": "Generate",
@@ -18,32 +19,17 @@ TEXTS = {
         "symbols": "Symbols (!@#$)", "no_confusing": "No confusing (l, 1, O)",
         "copied": "Password copied!", "nav_gen": "Generator", "nav_info": "Info",
         "about_me": "Beginner coder, doing what I love", "tg": "Telegram", "github": "GitHub",
-        "app_desc": "Secure offline generator.\nData never leaves your device."
+        "app_desc": "Secure offline generator.\nData never leaves your device.",
+        "hide": "Hide", "show": "Show"
     }
 }
 
 # --- 4 ГОТОВЫЕ ТЕМЫ ---
 THEMES = {
-    "dark": {
-        "bg": ft.Colors.SURFACE, "title": ft.Colors.PURPLE_400, 
-        "border": ft.Colors.RED_400, "btn": ft.Colors.BLUE, 
-        "slider": ft.Colors.PURPLE_400, "nav_bg": ft.Colors.SURFACE_CONTAINER_HIGHEST
-    },
-    "light": {
-        "bg": ft.Colors.WHITE, "title": ft.Colors.PURPLE_700, 
-        "border": ft.Colors.RED_400, "btn": ft.Colors.BLUE_700, 
-        "slider": ft.Colors.PURPLE_700, "nav_bg": ft.Colors.GREY_200
-    },
-    "purple": {
-        "bg": ft.Colors.DEEP_PURPLE_900, "title": ft.Colors.PURPLE_200, 
-        "border": ft.Colors.PURPLE_300, "btn": ft.Colors.PURPLE_600, 
-        "slider": ft.Colors.PURPLE_200, "nav_bg": ft.Colors.DEEP_PURPLE_800
-    },
-    "forest": {
-        "bg": ft.Colors.GREEN_900, "title": ft.Colors.LIGHT_GREEN_400, 
-        "border": ft.Colors.LIGHT_GREEN_400, "btn": ft.Colors.GREEN_600, 
-        "slider": ft.Colors.LIGHT_GREEN_400, "nav_bg": ft.Colors.GREEN_800
-    }
+    "dark": {"bg": ft.Colors.SURFACE, "title": ft.Colors.PURPLE_400, "border": ft.Colors.RED_400, "btn": ft.Colors.BLUE, "slider": ft.Colors.PURPLE_400, "nav_bg": ft.Colors.SURFACE_CONTAINER_HIGHEST},
+    "light": {"bg": ft.Colors.WHITE, "title": ft.Colors.PURPLE_700, "border": ft.Colors.RED_400, "btn": ft.Colors.BLUE_700, "slider": ft.Colors.PURPLE_700, "nav_bg": ft.Colors.GREY_200},
+    "purple": {"bg": ft.Colors.DEEP_PURPLE_900, "title": ft.Colors.PURPLE_200, "border": ft.Colors.PURPLE_300, "btn": ft.Colors.PURPLE_600, "slider": ft.Colors.PURPLE_200, "nav_bg": ft.Colors.DEEP_PURPLE_800},
+    "forest": {"bg": ft.Colors.GREEN_900, "title": ft.Colors.LIGHT_GREEN_400, "border": ft.Colors.LIGHT_GREEN_400, "btn": ft.Colors.GREEN_600, "slider": ft.Colors.LIGHT_GREEN_400, "nav_bg": ft.Colors.GREEN_800}
 }
 
 def gen_pwd(length, digits=True, symbols=True, no_confusing=False):
@@ -71,11 +57,20 @@ def main(page: ft.Page):
     
     current_lang = "ru"
     current_theme = "dark"
+    real_password = "" # Здесь храним настоящий пароль
 
     title_text = ft.Text(TEXTS[current_lang]["title"], size=28, weight=ft.FontWeight.BOLD)
-    pwd_field = ft.TextField(value="", read_only=True, text_align=ft.TextAlign.CENTER, text_size=20)
-    str_text = ft.Text("", size=16, weight=ft.FontWeight.BOLD)
     
+    # Поле пароля
+    pwd_field = ft.TextField(value="", read_only=True, text_align=ft.TextAlign.CENTER, text_size=20)
+    
+    # Глаз для скрытия/показа
+    eye_icon = ft.IconButton(ft.Icons.VISIBILITY, tooltip=TEXTS[current_lang]["hide"])
+    
+    # Полоска надежности
+    strength_bar = ft.ProgressBar(width=300, value=0, bgcolor=ft.Colors.GREY_800, color=ft.Colors.RED)
+    str_text = ft.Text("", size=16, weight=ft.FontWeight.BOLD)
+
     slider = ft.Slider(min=8, max=32, divisions=24, value=16, label="Длина: {value}")
     len_label = ft.Text(f"{TEXTS[current_lang]['length']} 16", size=16)
     
@@ -93,18 +88,43 @@ def main(page: ft.Page):
     btn_gen = ft.Button(content=TEXTS[current_lang]["gen_btn"], width=300, height=50, color=ft.Colors.WHITE)
     btn_copy = ft.Button(content=TEXTS[current_lang]["copy_btn"], width=300, height=50, color=ft.Colors.WHITE)
 
+    def toggle_visibility(e):
+        nonlocal real_password
+        if pwd_field.password:
+            pwd_field.password = False
+            pwd_field.value = real_password
+            eye_icon.icon = ft.Icons.VISIBILITY_OFF
+        else:
+            pwd_field.password = True
+            pwd_field.value = "•" * len(real_password)
+            eye_icon.icon = ft.Icons.VISIBILITY
+        page.update()
+
+    eye_icon.on_click = toggle_visibility
+
     def generate(e):
-        pwd = gen_pwd(int(slider.value), sw_d.value, sw_s.value, sw_c.value)
-        pwd_field.value = pwd
-        sc, st, cl = analyze(pwd)
+        nonlocal real_password
+        real_password = gen_pwd(int(slider.value), sw_d.value, sw_s.value, sw_c.value)
+        
+        # Если пароль был скрыт, обновляем звездочки
+        if pwd_field.password:
+            pwd_field.value = "•" * len(real_password)
+        else:
+            pwd_field.value = real_password
+            
+        # Обновляем полоску надежности
+        sc, st, cl = analyze(real_password)
+        strength_bar.value = sc / 100
+        strength_bar.color = cl
+        
         status_text = ("Надежный" if st == "Strong" else ("Средний" if st == "Medium" else "Слабый")) if current_lang == "ru" else st
         str_text.value = f"Надежность: {sc}% ({status_text})" if current_lang == "ru" else f"Strength: {sc}% ({status_text})"
         str_text.color = cl
         page.update()
 
     async def copy(e):
-        if pwd_field.value:
-            await ft.Clipboard().set(pwd_field.value)
+        if real_password:
+            await ft.Clipboard().set(real_password)
             page.snack_bar = ft.SnackBar(content=ft.Text(TEXTS[current_lang]["copied"], color=ft.Colors.WHITE), bgcolor=ft.Colors.GREEN_800)
             page.snack_bar.open = True
             page.update()
@@ -130,7 +150,6 @@ def main(page: ft.Page):
         ]
     )
 
-    # ⚠️ ИСПРАВЛЕНО ЗДЕСЬ: ft.Alignment.CENTER
     content_area = ft.Container(expand=True, alignment=ft.Alignment.CENTER)
 
     def apply_theme():
@@ -189,8 +208,18 @@ def main(page: ft.Page):
         ]
     )
 
-    tab_gen = ft.Column([title_text, pwd_field, str_text, len_label, slider, len_btns, sw_d, sw_s, sw_c, btn_gen, btn_copy], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
-    tab_info = ft.Column([ft.Icon(ft.Icons.PERSON, size=80), info_name, info_desc, btn_tg, btn_gh, ft.Divider(height=20, color="transparent"), ft.Text("PasswordGen v1.5", size=14, color=ft.Colors.GREY_400), app_desc], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
+    # Компоновка поля пароля и глаза в одну строку
+    pwd_row = ft.Row([pwd_field, eye_icon], alignment=ft.MainAxisAlignment.CENTER)
+
+    tab_gen = ft.Column([
+        title_text, pwd_row, strength_bar, str_text, len_label, slider, len_btns, 
+        sw_d, sw_s, sw_c, btn_gen, btn_copy
+    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
+    
+    tab_info = ft.Column([
+        ft.Icon(ft.Icons.PERSON, size=80), info_name, info_desc, btn_tg, btn_gh, 
+        ft.Divider(height=20, color="transparent"), ft.Text("PasswordGen v1.6", size=14, color=ft.Colors.GREY_400), app_desc
+    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
 
     content_area.content = tab_gen
     page.navigation_bar = nav_bar
