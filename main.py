@@ -59,11 +59,12 @@ def main(page: ft.Page):
 
     title_text = ft.Text(TEXTS[current_lang]["title"], size=28, weight=ft.FontWeight.BOLD)
     
-    # --- ВКЛАДКА ГЕНЕРАТОР ---
+    # --- ВКЛАДКА 1: ГЕНЕРАТОР ---
     pwd_field = ft.TextField(value="", read_only=True, text_align=ft.TextAlign.CENTER, text_size=20)
     eye_icon = ft.IconButton(ft.Icons.VISIBILITY, tooltip="Скрыть/Показать")
     strength_bar = ft.ProgressBar(width=300, value=0, bgcolor=ft.Colors.GREY_800, color=ft.Colors.RED)
     str_text = ft.Text("", size=16, weight=ft.FontWeight.BOLD)
+    
     slider = ft.Slider(min=8, max=32, divisions=24, value=16, label="Длина: {value}")
     len_label = ft.Text(f"{TEXTS[current_lang]['length']} 16", size=16)
 
@@ -76,6 +77,7 @@ def main(page: ft.Page):
     sw_d = ft.Switch(label=TEXTS[current_lang]["digits"], value=True)
     sw_s = ft.Switch(label=TEXTS[current_lang]["symbols"], value=True)
     sw_c = ft.Switch(label=TEXTS[current_lang]["no_confusing"], value=False)
+    
     btn_gen = ft.Button(content=TEXTS[current_lang]["gen_btn"], width=300, height=50, color=ft.Colors.WHITE)
     btn_copy = ft.Button(content=TEXTS[current_lang]["copy_btn"], width=300, height=50, color=ft.Colors.WHITE)
 
@@ -120,7 +122,7 @@ def main(page: ft.Page):
     pwd_row = ft.Row([pwd_field, eye_icon], alignment=ft.MainAxisAlignment.CENTER)
     tab_gen = ft.Column([pwd_row, strength_bar, str_text, len_label, slider, len_btns, sw_d, sw_s, sw_c, btn_gen, btn_copy], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
 
-    # --- ВКЛАДКА ИНФО ---
+    # --- ВКЛАДКА 2: ИНФО ---
     async def open_link(url):
         try: await page.launch_url(url, web_window_name="_blank")
         except: pass
@@ -133,39 +135,26 @@ def main(page: ft.Page):
     
     tab_info = ft.Column([ft.Icon(ft.Icons.PERSON, size=80), info_name, info_desc, btn_tg, btn_gh, ft.Divider(height=20, color="transparent"), ft.Text("PasswordGen v1.7", size=14, color=ft.Colors.GREY_400), app_desc], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
 
-    # --- КОНТЕЙНЕР ДЛЯ КОНТЕНТА ---
-    content_area = ft.Container(content=tab_gen, expand=True, alignment=ft.Alignment.CENTER)
+    # --- КОНТЕЙНЕР С ПЕРЕКЛЮЧЕНИЕМ БЕЗ БАГОВ ---
+    # Используем IndexedStack, чтобы вкладки не пересоздавались, а просто скрывались
+    content_stack = ft.IndexedStack(index=0, controls=[tab_gen, tab_info])
 
-    # --- ВЕРХНИЕ ВКЛАДКИ (ВМЕСТО НИЖНЕГО МЕНЮ) ---
-    def switch_tab(e):
-        if e.control.selected_index == 0:
-            content_area.content = tab_gen
-        else:
-            content_area.content = tab_info
+    # --- ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК (Кнопки сверху) ---
+    def switch_tab(index):
+        content_stack.index = index
         page.update()
 
-    # Создаем сами вкладки (Tabs)
-    tabs = ft.Tabs(
-        selected_index=0,
-        animation_duration=300,
-        on_change=switch_tab,
-        tabs=[
-            ft.Tab(text=TEXTS[current_lang]["nav_gen"], icon=ft.Icons.HOME),
-            ft.Tab(text=TEXTS[current_lang]["nav_info"], icon=ft.Icons.INFO),
+    # Создаем две красивые кнопки для вкладок
+    tabs_row = ft.Row(
+        controls=[
+            ft.Button(content="Генератор", on_click=lambda e: switch_tab(0), width=150),
+            ft.Button(content="Инфо", on_click=lambda e: switch_tab(1), width=150),
         ],
-        expand=1
+        alignment=ft.MainAxisAlignment.CENTER,
+        spacing=10
     )
 
-    # --- СБОРКА СТРАНИЦЫ ---
-    page.appbar = ft.AppBar(
-        title=ft.Text(TEXTS[current_lang]["app_title"]),
-        center_title=True,
-        actions=[
-            ft.IconButton(ft.Icons.PALETTE, on_click=lambda e: toggle_theme(e), tooltip="Сменить тему"),
-            ft.IconButton(ft.Icons.LANGUAGE, on_click=lambda e: toggle_lang(e), tooltip="Сменить язык")
-        ]
-    )
-
+    # --- ФУНКЦИИ ТЕМ И ЯЗЫКА ---
     def apply_theme():
         t = THEMES[current_theme]
         page.bgcolor = t["bg"]
@@ -195,8 +184,8 @@ def main(page: ft.Page):
         sw_c.label = TEXTS[current_lang]["no_confusing"]
         btn_gen.content = TEXTS[current_lang]["gen_btn"]
         btn_copy.content = TEXTS[current_lang]["copy_btn"]
-        tabs.tabs[0].text = TEXTS[current_lang]["nav_gen"]
-        tabs.tabs[1].text = TEXTS[current_lang]["nav_info"]
+        tabs_row.controls[0].content = TEXTS[current_lang]["nav_gen"]
+        tabs_row.controls[1].content = TEXTS[current_lang]["nav_info"]
         info_desc.value = TEXTS[current_lang]["about_me"]
         btn_tg.content = TEXTS[current_lang]["tg"]
         btn_gh.content = TEXTS[current_lang]["github"]
@@ -208,9 +197,23 @@ def main(page: ft.Page):
         current_lang = "en" if current_lang == "ru" else "ru"
         update_ui_texts()
 
-    # Вставляем заголовок и вкладки на страницу
+    # --- ВЕРХНЯЯ ПАНЕЛЬ ---
+    page.appbar = ft.AppBar(
+        title=ft.Text(TEXTS[current_lang]["app_title"]),
+        center_title=True,
+        actions=[
+            ft.IconButton(ft.Icons.PALETTE, on_click=toggle_theme, tooltip="Сменить тему"),
+            ft.IconButton(ft.Icons.LANGUAGE, on_click=toggle_lang, tooltip="Сменить язык")
+        ]
+    )
+
+    # --- СБОРКА СТРАНИЦЫ ---
     page.add(
-        ft.Column([title_text, tabs, content_area], expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+        ft.Column(
+            [title_text, tabs_row, content_stack], 
+            expand=True, 
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER
+        )
     )
     
     apply_theme()
