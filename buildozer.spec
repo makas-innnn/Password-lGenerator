@@ -1,4 +1,4 @@
-э[app]
+[app]
 title = PasswordGen
 package.name = passwordgen
 package.domain = org.test
@@ -16,5 +16,4 @@ android.ndk = 25b
 android.archs = arm64-v8a, armeabi-v7a
 android.accept_sdk_license = True
 
-# ВОТ ГЛАВНАЯ СТРОКА: используем ветку develop, где уже починили libthrv
 p4a.branch = develop
