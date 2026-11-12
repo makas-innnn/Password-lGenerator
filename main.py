@@ -33,23 +33,23 @@ def main(page: ft.Page):
 
     def generate(e):
         password_field.value = generate_strong_password(16)
-        page.update()
+        # page.update() больше не нужен, Flet обновит сам
 
-    def copy(e):
+    async def copy(e):
         if password_field.value:
-            # Надежный способ копирования в буфер обмена для новых версий Flet
-            page.set_clipboard(password_field.value)
+            # Новый способ копирования в Flet 1.0 (асинхронный)
+            await ft.Clipboard().set(password_field.value)
             page.snack_bar = ft.SnackBar(ft.Text("Пароль скопирован!"))
             page.snack_bar.open = True
-            page.update()
+            # page.update() не нужен, обновится автоматически
 
     page.add(
         ft.Text("🔐 Генератор паролей", size=28, weight=ft.FontWeight.BOLD),
         ft.Divider(height=20, color="transparent"),
         password_field,
         ft.Divider(height=10, color="transparent"),
-        ft.ElevatedButton(
-            text="Сгенерировать", 
+        ft.Button(
+            content="Сгенерировать",  # В новых версиях текст кнопки передается через content
             on_click=generate, 
             width=300, 
             height=50, 
@@ -57,8 +57,8 @@ def main(page: ft.Page):
             color=ft.Colors.WHITE
         ),
         ft.Divider(height=10, color="transparent"),
-        ft.ElevatedButton(
-            text="Копировать", 
+        ft.Button(
+            content="Копировать",
             on_click=copy, 
             width=300, 
             height=50, 
