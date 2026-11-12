@@ -13,14 +13,12 @@ jobs:
       - name: Accept Android SDK Licenses
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses || true
-          
+
       - name: Install dependencies
         run: |
           sudo apt update
           sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
-          
-          # ЖЕСТКО ФИКСИРУЕМ ВЕРСИИ, ЧТОБЫ ОБОЙТИ ОШИБКУ AAB
-          pip install buildozer==1.5.0 cython==0.29.36
+          pip install buildozer cython
 
       - name: Build with Buildozer
         run: |
