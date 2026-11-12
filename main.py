@@ -2,41 +2,51 @@ import flet as ft
 import random
 import string
 
-# Словарь переводов
+# --- СЛОВАРИ ПЕРЕВОДОВ ---
 TEXTS = {
     "ru": {
-        "title": "🔐 Генератор паролей",
-        "app_title": "PasswordGen",
-        "gen_btn": "Сгенерировать",
-        "copy_btn": "Копировать",
-        "length": "Длина пароля:",
-        "digits": "Цифры (0-9)",
-        "symbols": "Спецсимволы (!@#$)",
-        "no_confusing": "Без похожих (l, 1, O)",
-        "copied": "Пароль скопирован!",
-        "nav_gen": "Генератор",
-        "nav_info": "Инфо",
-        "about_me": "Начинающий кодер, делаю что в кайф",
-        "tg": "Telegram",
-        "github": "GitHub",
+        "title": "🔐 Генератор паролей", "app_title": "PasswordGen", "gen_btn": "Сгенерировать",
+        "copy_btn": "Копировать", "length": "Длина пароля:", "digits": "Цифры (0-9)",
+        "symbols": "Спецсимволы (!@#$)", "no_confusing": "Без похожих (l, 1, O)",
+        "copied": "Пароль скопирован!", "nav_gen": "Генератор", "nav_info": "Инфо",
+        "about_me": "Начинающий кодер, делаю что в кайф", "tg": "Telegram", "github": "GitHub",
         "app_desc": "Безопасный офлайн-генератор.\nДанные не покидают устройство."
     },
     "en": {
-        "title": "🔐 Password Generator",
-        "app_title": "PasswordGen",
-        "gen_btn": "Generate",
-        "copy_btn": "Copy",
-        "length": "Password length:",
-        "digits": "Digits (0-9)",
-        "symbols": "Symbols (!@#$)",
-        "no_confusing": "No confusing (l, 1, O)",
-        "copied": "Password copied!",
-        "nav_gen": "Generator",
-        "nav_info": "Info",
-        "about_me": "Beginner coder, doing what I love",
-        "tg": "Telegram",
-        "github": "GitHub",
+        "title": "🔐 Password Generator", "app_title": "PasswordGen", "gen_btn": "Generate",
+        "copy_btn": "Copy", "length": "Password length:", "digits": "Digits (0-9)",
+        "symbols": "Symbols (!@#$)", "no_confusing": "No confusing (l, 1, O)",
+        "copied": "Password copied!", "nav_gen": "Generator", "nav_info": "Info",
+        "about_me": "Beginner coder, doing what I love", "tg": "Telegram", "github": "GitHub",
         "app_desc": "Secure offline generator.\nData never leaves your device."
+    }
+}
+
+# --- ТЕМЫ ОФОРМЛЕНИЯ ---
+THEMES = {
+    "dark": {
+        "bg": ft.Colors.SURFACE, "title": ft.Colors.PURPLE_400, 
+        "border": ft.Colors.RED_400, "gen_btn": ft.Colors.BLUE, 
+        "copy_btn": ft.Colors.GREEN, "slider": ft.Colors.PURPLE_400,
+        "nav_bg": ft.Colors.SURFACE_CONTAINER_HIGHEST
+    },
+    "light": {
+        "bg": ft.Colors.WHITE, "title": ft.Colors.PURPLE_700, 
+        "border": ft.Colors.RED_400, "gen_btn": ft.Colors.BLUE_700, 
+        "copy_btn": ft.Colors.GREEN_700, "slider": ft.Colors.PURPLE_700,
+        "nav_bg": ft.Colors.GREY_200
+    },
+    "purple": {
+        "bg": ft.Colors.DEEP_PURPLE_900, "title": ft.Colors.PURPLE_200, 
+        "border": ft.Colors.PURPLE_300, "gen_btn": ft.Colors.PURPLE_600, 
+        "copy_btn": ft.Colors.DEEP_PURPLE_500, "slider": ft.Colors.PURPLE_200,
+        "nav_bg": ft.Colors.DEEP_PURPLE_800
+    },
+    "forest": {
+        "bg": ft.Colors.GREEN_900, "title": ft.Colors.LIGHT_GREEN_400, 
+        "border": ft.Colors.LIGHT_GREEN_400, "gen_btn": ft.Colors.GREEN_600, 
+        "copy_btn": ft.Colors.LIGHT_GREEN_600, "slider": ft.Colors.LIGHT_GREEN_400,
+        "nav_bg": ft.Colors.GREEN_800
     }
 }
 
@@ -44,13 +54,10 @@ def gen_pwd(length, digits=True, symbols=True, no_confusing=False):
     lo, up, di, sy = string.ascii_lowercase, string.ascii_uppercase, string.digits, "!@#$%^&*"
     if no_confusing:
         lo, up, di = "abcdefghijkmnpqrstuvwxyz", "ABCDEFGHJKLMNPQRSTUVWXYZ", "23456789"
-    
     pwd = [random.choice(lo), random.choice(up)]
     chars = lo + up
-    
     if digits: pwd.append(random.choice(di)); chars += di
     if symbols: pwd.append(random.choice(sy)); chars += sy
-    
     while len(pwd) < length: pwd.append(random.choice(chars))
     random.shuffle(pwd)
     return "".join(pwd)
@@ -64,18 +71,17 @@ def analyze(pwd):
 
 def main(page: ft.Page):
     page.title = "PasswordGen"
-    page.theme_mode = ft.ThemeMode.DARK
     page.padding = 20
     
-    # Текущий язык (по умолчанию ru)
     current_lang = "ru"
+    current_theme = "dark"
 
-    # Элементы интерфейса, которые будут меняться
-    title_text = ft.Text(TEXTS[current_lang]["title"], size=28, weight=ft.FontWeight.BOLD, color=ft.Colors.PURPLE_400)
-    pwd_field = ft.TextField(value="", read_only=True, text_align=ft.TextAlign.CENTER, text_size=20, border_color=ft.Colors.RED_400)
+    # Элементы интерфейса
+    title_text = ft.Text(TEXTS[current_lang]["title"], size=28, weight=ft.FontWeight.BOLD)
+    pwd_field = ft.TextField(value="", read_only=True, text_align=ft.TextAlign.CENTER, text_size=20)
     str_text = ft.Text("", size=16, weight=ft.FontWeight.BOLD)
     
-    slider = ft.Slider(min=8, max=32, divisions=24, value=16, label="Длина: {value}", active_color=ft.Colors.PURPLE_400)
+    slider = ft.Slider(min=8, max=32, divisions=24, value=16, label="Длина: {value}")
     len_label = ft.Text(f"{TEXTS[current_lang]['length']} 16", size=16)
     
     def set_len(v): 
@@ -85,20 +91,18 @@ def main(page: ft.Page):
 
     len_btns = ft.Row([ft.Button(content=str(v), on_click=lambda e, v=v: set_len(v), width=45, height=40) for v in [8,12,16,20,32]], alignment=ft.MainAxisAlignment.CENTER, spacing=5)
     
-    sw_d = ft.Switch(label=TEXTS[current_lang]["digits"], value=True, active_color=ft.Colors.PURPLE_400)
-    sw_s = ft.Switch(label=TEXTS[current_lang]["symbols"], value=True, active_color=ft.Colors.PURPLE_400)
-    sw_c = ft.Switch(label=TEXTS[current_lang]["no_confusing"], value=False, active_color=ft.Colors.PURPLE_400)
+    sw_d = ft.Switch(label=TEXTS[current_lang]["digits"], value=True)
+    sw_s = ft.Switch(label=TEXTS[current_lang]["symbols"], value=True)
+    sw_c = ft.Switch(label=TEXTS[current_lang]["no_confusing"], value=False)
 
-    btn_gen = ft.Button(content=TEXTS[current_lang]["gen_btn"], on_click=lambda e: generate(e), width=300, height=50, bgcolor=ft.Colors.BLUE, color=ft.Colors.WHITE)
-    btn_copy = ft.Button(content=TEXTS[current_lang]["copy_btn"], on_click=lambda e: page.run_task(copy, e), width=300, height=50, bgcolor=ft.Colors.GREEN, color=ft.Colors.WHITE)
+    btn_gen = ft.Button(content=TEXTS[current_lang]["gen_btn"], width=300, height=50, color=ft.Colors.WHITE)
+    btn_copy = ft.Button(content=TEXTS[current_lang]["copy_btn"], width=300, height=50, color=ft.Colors.WHITE)
 
     def generate(e):
         pwd = gen_pwd(int(slider.value), sw_d.value, sw_s.value, sw_c.value)
         pwd_field.value = pwd
         sc, st, cl = analyze(pwd)
-        # Переводим статус надежности
-        status_ru = "Надежный" if st == "Strong" else ("Средний" if st == "Medium" else "Слабый")
-        status_text = status_ru if current_lang == "ru" else st
+        status_text = ("Надежный" if st == "Strong" else ("Средний" if st == "Medium" else "Слабый")) if current_lang == "ru" else st
         str_text.value = f"Надежность: {sc}% ({status_text})" if current_lang == "ru" else f"Strength: {sc}% ({status_text})"
         str_text.color = cl
         page.update()
@@ -106,19 +110,17 @@ def main(page: ft.Page):
     async def copy(e):
         if pwd_field.value:
             await ft.Clipboard().set(pwd_field.value)
-            page.snack_bar = ft.SnackBar(
-                content=ft.Text(TEXTS[current_lang]["copied"], color=ft.Colors.WHITE),
-                bgcolor=ft.Colors.GREEN_800
-            )
+            page.snack_bar = ft.SnackBar(content=ft.Text(TEXTS[current_lang]["copied"], color=ft.Colors.WHITE), bgcolor=ft.Colors.GREEN_800)
             page.snack_bar.open = True
             page.update()
 
+    btn_gen.on_click = generate
+    btn_copy.on_click = lambda e: page.run_task(copy, e)
+
     # --- ВКЛАДКА 2 ---
     async def open_link(url):
-        try:
-            await page.launch_url(url, web_window_name="_blank")
-        except Exception:
-            pass
+        try: await page.launch_url(url, web_window_name="_blank")
+        except: pass
     
     info_name = ft.Text("Евгений (makas)", size=22, weight=ft.FontWeight.BOLD)
     info_desc = ft.Text(TEXTS[current_lang]["about_me"], size=16, color=ft.Colors.GREY_400)
@@ -126,17 +128,38 @@ def main(page: ft.Page):
     btn_gh = ft.Button(content=TEXTS[current_lang]["github"], icon=ft.Icons.CODE, on_click=lambda e: page.run_task(open_link, "https://github.com/makas-innnn"), width=300, bgcolor=ft.Colors.GREY_800, color=ft.Colors.WHITE)
     app_desc = ft.Text(TEXTS[current_lang]["app_desc"], size=14, text_align=ft.TextAlign.CENTER)
 
-    # --- НАВИГАЦИЯ ---
     nav_bar = ft.NavigationBar(
         selected_index=0, 
         destinations=[
             ft.NavigationBarDestination(icon=ft.Icons.HOME, label=TEXTS[current_lang]["nav_gen"]), 
             ft.NavigationBarDestination(icon=ft.Icons.INFO, label=TEXTS[current_lang]["nav_info"])
-        ], 
-        on_change=lambda e: on_nav(e)
+        ]
     )
 
     content_area = ft.Container(expand=True, alignment=ft.alignment.center)
+
+    # --- ФУНКЦИИ СМЕНЫ ЯЗЫКА И ТЕМЫ ---
+    def apply_theme():
+        t = THEMES[current_theme]
+        page.bgcolor = t["bg"]
+        title_text.color = t["title"]
+        pwd_field.border_color = t["border"]
+        btn_gen.bgcolor = t["gen_btn"]
+        btn_copy.bgcolor = t["copy_btn"]
+        slider.active_color = t["slider"]
+        sw_d.active_color = t["slider"]
+        sw_s.active_color = t["slider"]
+        sw_c.active_color = t["slider"]
+        nav_bar.bgcolor = t["nav_bg"]
+        page.appbar.bgcolor = t["nav_bg"]
+        page.update()
+
+    def toggle_theme(e):
+        nonlocal current_theme
+        themes_list = list(THEMES.keys())
+        idx = themes_list.index(current_theme)
+        current_theme = themes_list[(idx + 1) % len(themes_list)]
+        apply_theme()
 
     def update_ui_texts():
         title_text.value = TEXTS[current_lang]["title"]
@@ -159,25 +182,28 @@ def main(page: ft.Page):
         current_lang = "en" if current_lang == "ru" else "ru"
         update_ui_texts()
 
-    # Кнопка смены языка в AppBar
-    page.appbar = ft.AppBar(
-        title=ft.Text(TEXTS[current_lang]["app_title"]),
-        center_title=True,
-        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
-        actions=[
-            ft.IconButton(ft.Icons.LANGUAGE, on_click=toggle_lang, tooltip="Switch Language / Сменить язык")
-        ]
-    )
-
-    tab_gen = ft.Column([title_text, pwd_field, str_text, len_label, slider, len_btns, sw_d, sw_s, sw_c, btn_gen, btn_copy], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
-    tab_info = ft.Column([ft.Icon(ft.Icons.PERSON, size=80, color=ft.Colors.PURPLE_400), info_name, info_desc, btn_tg, btn_gh, ft.Divider(height=20, color="transparent"), ft.Text("PasswordGen v1.3", size=14, color=ft.Colors.GREY_400), app_desc], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
-
     def on_nav(e):
         content_area.content = tab_gen if e.control.selected_index == 0 else tab_info
         page.update()
 
+    # --- ВЕРХНЯЯ ПАНЕЛЬ ---
+    page.appbar = ft.AppBar(
+        title=ft.Text(TEXTS[current_lang]["app_title"]),
+        center_title=True,
+        actions=[
+            ft.IconButton(ft.Icons.PALETTE, on_click=toggle_theme, tooltip="Сменить тему / Change Theme"),
+            ft.IconButton(ft.Icons.LANGUAGE, on_click=toggle_lang, tooltip="Сменить язык / Change Language")
+        ]
+    )
+
+    tab_gen = ft.Column([title_text, pwd_field, str_text, len_label, slider, len_btns, sw_d, sw_s, sw_c, btn_gen, btn_copy], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
+    tab_info = ft.Column([ft.Icon(ft.Icons.PERSON, size=80), info_name, info_desc, btn_tg, btn_gh, ft.Divider(height=20, color="transparent"), ft.Text("PasswordGen v1.5", size=14, color=ft.Colors.GREY_400), app_desc], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
+
     content_area.content = tab_gen
     page.navigation_bar = nav_bar
     page.add(content_area)
+    
+    # Применяем тему по умолчанию при запуске
+    apply_theme()
 
 ft.run(main)
