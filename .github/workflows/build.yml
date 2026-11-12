@@ -5,7 +5,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      FLET_SKIP_FLUTTER_DOCTOR: "true"
+      FLET_CLI_SKIP_FLUTTER_DOCTOR: "true"  # <--- ВОТ ЭТА СТРОЧКА ОБХОДИТ ДОКТОРА
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
