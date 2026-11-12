@@ -16,4 +16,6 @@ android.ndk = 25b
 android.archs = arm64-v8a, armeabi-v7a
 android.accept_sdk_license = True
 
+# Принудительно указываем скачать свежую ветку p4a архивом
 p4a.branch = develop
+p4a.url = https://github.com/kivy/python-for-android/archive/refs/heads/develop.zip
