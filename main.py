@@ -22,31 +22,27 @@ TEXTS = {
     }
 }
 
-# --- ТЕМЫ ОФОРМЛЕНИЯ ---
+# --- 4 ГОТОВЫЕ ТЕМЫ ---
 THEMES = {
     "dark": {
         "bg": ft.Colors.SURFACE, "title": ft.Colors.PURPLE_400, 
-        "border": ft.Colors.RED_400, "gen_btn": ft.Colors.BLUE, 
-        "copy_btn": ft.Colors.GREEN, "slider": ft.Colors.PURPLE_400,
-        "nav_bg": ft.Colors.SURFACE_CONTAINER_HIGHEST
+        "border": ft.Colors.RED_400, "btn": ft.Colors.BLUE, 
+        "slider": ft.Colors.PURPLE_400, "nav_bg": ft.Colors.SURFACE_CONTAINER_HIGHEST
     },
     "light": {
         "bg": ft.Colors.WHITE, "title": ft.Colors.PURPLE_700, 
-        "border": ft.Colors.RED_400, "gen_btn": ft.Colors.BLUE_700, 
-        "copy_btn": ft.Colors.GREEN_700, "slider": ft.Colors.PURPLE_700,
-        "nav_bg": ft.Colors.GREY_200
+        "border": ft.Colors.RED_400, "btn": ft.Colors.BLUE_700, 
+        "slider": ft.Colors.PURPLE_700, "nav_bg": ft.Colors.GREY_200
     },
     "purple": {
         "bg": ft.Colors.DEEP_PURPLE_900, "title": ft.Colors.PURPLE_200, 
-        "border": ft.Colors.PURPLE_300, "gen_btn": ft.Colors.PURPLE_600, 
-        "copy_btn": ft.Colors.DEEP_PURPLE_500, "slider": ft.Colors.PURPLE_200,
-        "nav_bg": ft.Colors.DEEP_PURPLE_800
+        "border": ft.Colors.PURPLE_300, "btn": ft.Colors.PURPLE_600, 
+        "slider": ft.Colors.PURPLE_200, "nav_bg": ft.Colors.DEEP_PURPLE_800
     },
     "forest": {
         "bg": ft.Colors.GREEN_900, "title": ft.Colors.LIGHT_GREEN_400, 
-        "border": ft.Colors.LIGHT_GREEN_400, "gen_btn": ft.Colors.GREEN_600, 
-        "copy_btn": ft.Colors.LIGHT_GREEN_600, "slider": ft.Colors.LIGHT_GREEN_400,
-        "nav_bg": ft.Colors.GREEN_800
+        "border": ft.Colors.LIGHT_GREEN_400, "btn": ft.Colors.GREEN_600, 
+        "slider": ft.Colors.LIGHT_GREEN_400, "nav_bg": ft.Colors.GREEN_800
     }
 }
 
@@ -76,7 +72,6 @@ def main(page: ft.Page):
     current_lang = "ru"
     current_theme = "dark"
 
-    # Элементы интерфейса
     title_text = ft.Text(TEXTS[current_lang]["title"], size=28, weight=ft.FontWeight.BOLD)
     pwd_field = ft.TextField(value="", read_only=True, text_align=ft.TextAlign.CENTER, text_size=20)
     str_text = ft.Text("", size=16, weight=ft.FontWeight.BOLD)
@@ -117,7 +112,6 @@ def main(page: ft.Page):
     btn_gen.on_click = generate
     btn_copy.on_click = lambda e: page.run_task(copy, e)
 
-    # --- ВКЛАДКА 2 ---
     async def open_link(url):
         try: await page.launch_url(url, web_window_name="_blank")
         except: pass
@@ -136,16 +130,16 @@ def main(page: ft.Page):
         ]
     )
 
-    content_area = ft.Container(expand=True, alignment=ft.alignment.center)
+    # ⚠️ ИСПРАВЛЕНО ЗДЕСЬ: ft.Alignment.CENTER
+    content_area = ft.Container(expand=True, alignment=ft.Alignment.CENTER)
 
-    # --- ФУНКЦИИ СМЕНЫ ЯЗЫКА И ТЕМЫ ---
     def apply_theme():
         t = THEMES[current_theme]
         page.bgcolor = t["bg"]
         title_text.color = t["title"]
         pwd_field.border_color = t["border"]
-        btn_gen.bgcolor = t["gen_btn"]
-        btn_copy.bgcolor = t["copy_btn"]
+        btn_gen.bgcolor = t["btn"]
+        btn_copy.bgcolor = t["btn"]
         slider.active_color = t["slider"]
         sw_d.active_color = t["slider"]
         sw_s.active_color = t["slider"]
@@ -186,7 +180,6 @@ def main(page: ft.Page):
         content_area.content = tab_gen if e.control.selected_index == 0 else tab_info
         page.update()
 
-    # --- ВЕРХНЯЯ ПАНЕЛЬ ---
     page.appbar = ft.AppBar(
         title=ft.Text(TEXTS[current_lang]["app_title"]),
         center_title=True,
@@ -203,7 +196,6 @@ def main(page: ft.Page):
     page.navigation_bar = nav_bar
     page.add(content_area)
     
-    # Применяем тему по умолчанию при запуске
     apply_theme()
 
 ft.run(main)
