@@ -43,6 +43,7 @@ def gen_pwd(length, digits=True, symbols=True, no_confusing=False):
     return "".join(pwd)
 
 def analyze(pwd):
+    if not pwd: return 0, "Weak", ft.Colors.RED
     s = sum([10 if len(pwd)>=8 else 0, 15 if len(pwd)>=12 else 0, 15 if len(pwd)>=16 else 0,
              10 if any(c.islower() for c in pwd) else 0, 15 if any(c.isupper() for c in pwd) else 0,
              15 if any(c.isdigit() for c in pwd) else 0, 20 if any(c in "!@#$%^&*" for c in pwd) else 0])
@@ -133,22 +134,35 @@ def main(page: ft.Page):
     btn_gh = ft.Button(content=TEXTS[current_lang]["github"], icon=ft.Icons.CODE, on_click=lambda e: page.run_task(open_link, "https://github.com/makas-innnn"), width=300, bgcolor=ft.Colors.GREY_800, color=ft.Colors.WHITE)
     app_desc = ft.Text(TEXTS[current_lang]["app_desc"], size=14, text_align=ft.TextAlign.CENTER)
     
-    tab_info = ft.Column([ft.Icon(ft.Icons.PERSON, size=80), info_name, info_desc, btn_tg, btn_gh, ft.Divider(height=20, color="transparent"), ft.Text("PasswordGen v1.7", size=14, color=ft.Colors.GREY_400), app_desc], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
+    tab_info = ft.Column([ft.Icon(ft.Icons.PERSON, size=80), info_name, info_desc, btn_tg, btn_gh, ft.Divider(height=20, color="transparent"), ft.Text("PasswordGen v1.8", size=14, color=ft.Colors.GREY_400), app_desc], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
 
-    # --- КОНТЕЙНЕР С ПЕРЕКЛЮЧЕНИЕМ БЕЗ БАГОВ ---
-    # Используем IndexedStack, чтобы вкладки не пересоздавались, а просто скрывались
-    content_stack = ft.IndexedStack(index=0, controls=[tab_gen, tab_info])
+    # --- ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК (ЧЕРЕЗ STACK И VISIBLE) ---
+    # Оборачиваем вкладки в контейнеры, чтобы Stack не ломал скролл
+    container_gen = ft.Container(content=tab_gen, expand=True)
+    container_info = ft.Container(content=tab_info, expand=True)
+    
+    # Изначально Инфо скрыт
+    container_info.visible = False 
+    
+    content_stack = ft.Stack([container_gen, container_info], expand=True)
 
-    # --- ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК (Кнопки сверху) ---
     def switch_tab(index):
-        content_stack.index = index
+        if index == 0:
+            container_gen.visible = True
+            container_info.visible = False
+        else:
+            container_gen.visible = False
+            container_info.visible = True
         page.update()
 
-    # Создаем две красивые кнопки для вкладок
+    # Кнопки вкладок (сохраняем ссылки на Text для смены языка)
+    txt_btn_gen = ft.Text("Генератор")
+    txt_btn_info = ft.Text("Инфо")
+    
     tabs_row = ft.Row(
         controls=[
-            ft.Button(content="Генератор", on_click=lambda e: switch_tab(0), width=150),
-            ft.Button(content="Инфо", on_click=lambda e: switch_tab(1), width=150),
+            ft.Button(content=txt_btn_gen, on_click=lambda e: switch_tab(0), width=150),
+            ft.Button(content=txt_btn_info, on_click=lambda e: switch_tab(1), width=150),
         ],
         alignment=ft.MainAxisAlignment.CENTER,
         spacing=10
@@ -184,8 +198,8 @@ def main(page: ft.Page):
         sw_c.label = TEXTS[current_lang]["no_confusing"]
         btn_gen.content = TEXTS[current_lang]["gen_btn"]
         btn_copy.content = TEXTS[current_lang]["copy_btn"]
-        tabs_row.controls[0].content = TEXTS[current_lang]["nav_gen"]
-        tabs_row.controls[1].content = TEXTS[current_lang]["nav_info"]
+        txt_btn_gen.value = TEXTS[current_lang]["nav_gen"]
+        txt_btn_info.value = TEXTS[current_lang]["nav_info"]
         info_desc.value = TEXTS[current_lang]["about_me"]
         btn_tg.content = TEXTS[current_lang]["tg"]
         btn_gh.content = TEXTS[current_lang]["github"]
@@ -197,7 +211,6 @@ def main(page: ft.Page):
         current_lang = "en" if current_lang == "ru" else "ru"
         update_ui_texts()
 
-    # --- ВЕРХНЯЯ ПАНЕЛЬ ---
     page.appbar = ft.AppBar(
         title=ft.Text(TEXTS[current_lang]["app_title"]),
         center_title=True,
@@ -207,7 +220,6 @@ def main(page: ft.Page):
         ]
     )
 
-    # --- СБОРКА СТРАНИЦЫ ---
     page.add(
         ft.Column(
             [title_text, tabs_row, content_stack], 
