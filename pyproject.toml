@@ -1,9 +1,9 @@
 [project]
 name = "PasswordGen"
 version = "1.8.0"
-description = "Безопасный генератор паролей"
+description = "Безопасный офлайн-генератор паролей"
 authors = [
-  {name = "makas-innnn", email = "your@email.com"}
+  {name = "makas-innnn", email = "makas@example.com"}
 ]
 dependencies = [
   "flet"
@@ -12,5 +12,4 @@ dependencies = [
 [tool.flet]
 org = "com.makas"
 product = "PasswordGen"
-[tool.flet.icons]
-android = "icon.png"
+build_number = 2  # <--- ВОТ ЭТО ГЛАВНОЕ. Version Code для RuStore
