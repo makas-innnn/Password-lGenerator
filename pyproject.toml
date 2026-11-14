@@ -1,6 +1,6 @@
 [project]
 name = "PasswordGen"
-version = "1.0.0"
+version = "1.8.0"
 description = "Безопасный генератор паролей"
 authors = [
   {name = "makas-innnn", email = "your@email.com"}
