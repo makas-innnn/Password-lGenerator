@@ -2,6 +2,10 @@ import flet as ft
 import random
 import string
 import json
+import asyncio
+import hashlib
+import urllib.request
+import ssl
 
 # --- ПЕРЕВОДЫ ---
 TEXTS = {
@@ -15,7 +19,10 @@ TEXTS = {
         "history": "История (последние 5)",
         "check_btn": "Проверить свой пароль", "check_hint": "Введите пароль для проверки...",
         "check_result": "Надежность: {}% ({})", "nav_check": "Проверка",
-        "tg_label": "Телеграм канал создателя:", "gh_label": "GitHub создателя:"
+        "tg_label": "Телеграм канал создателя:", "gh_label": "GitHub создателя:",
+        "check_leak_btn": "Проверить на утечки", "leak_checking": "Проверяем базы утечек...",
+        "leak_safe": "✅ Пароль не найден в утечках!", "leak_found": "⚠️ Пароль найден в утечках {} раз!",
+        "leak_error": "❌ Ошибка подключения к интернету."
     },
     "en": {
         "title": "🔐 Password Generator", "app_title": "PasswordGen", "gen_btn": "Generate",
@@ -27,7 +34,10 @@ TEXTS = {
         "history": "History (last 5)",
         "check_btn": "Check your password", "check_hint": "Enter password to check...",
         "check_result": "Strength: {}% ({})", "nav_check": "Check",
-        "tg_label": "Creator's Telegram channel:", "gh_label": "Creator's GitHub:"
+        "tg_label": "Creator's Telegram channel:", "gh_label": "Creator's GitHub:",
+        "check_leak_btn": "Check for leaks", "leak_checking": "Checking leak databases...",
+        "leak_safe": "✅ Password not found in leaks!", "leak_found": "⚠️ Password found in leaks {} times!",
+        "leak_error": "❌ Error connecting to the internet."
     }
 }
 
@@ -58,6 +68,28 @@ def analyze(pwd):
              15 if any(c.isdigit() for c in pwd) else 0, 20 if any(c in "!@#$%^&*" for c in pwd) else 0])
     s = min(s, 100)
     return (s, "Strong", ft.Colors.GREEN) if s >= 85 else ((s, "Medium", ft.Colors.ORANGE) if s >= 60 else (s, "Weak", ft.Colors.RED))
+
+# --- ФУНКЦИЯ ПРОВЕРКИ УТЕЧЕК (Безопасная для Android) ---
+def check_pwned(password):
+    sha1_hash = hashlib.sha1(password.encode()).hexdigest().upper()
+    prefix, suffix = sha1_hash[:5], sha1_hash[5:]
+    url = f"https://api.pwnedpasswords.com/range/{prefix}"
+    
+    # Создаем контекст SSL, который не блокирует запросы на Android
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'PasswordGen-App'})
+        with urllib.request.urlopen(req, timeout=5, context=context) as response:
+            data = response.read().decode('utf-8')
+            for line in data.splitlines():
+                if line.startswith(suffix):
+                    return int(line.split(':')[1])
+    except Exception:
+        return -1
+    return 0
 
 def main(page: ft.Page):
     page.title = "PasswordGen"
@@ -164,6 +196,9 @@ def main(page: ft.Page):
     # --- ВКЛАДКА 2: ПРОВЕРКА ---
     check_field = ft.TextField(label=TEXTS[state["lang"]]["check_hint"], password=True, can_reveal_password=True, text_size=16)
     check_result_text = ft.Text("", size=16, weight=ft.FontWeight.BOLD)
+    
+    leak_btn = ft.Button(content=TEXTS[state["lang"]]["check_leak_btn"], width=250, height=40, bgcolor=ft.Colors.ORANGE_700, color=ft.Colors.WHITE)
+    leak_result_text = ft.Text("", size=14, text_align=ft.TextAlign.CENTER)
 
     def check_my_pwd(e):
         if not check_field.value:
@@ -176,15 +211,39 @@ def main(page: ft.Page):
         check_result_text.color = cl
         page.update()
 
+    async def do_leak_check(e):
+        if not check_field.value:
+            return
+        leak_result_text.value = TEXTS[state["lang"]]["leak_checking"]
+        leak_result_text.color = ft.Colors.GREY_400
+        page.update()
+        
+        result = await asyncio.to_thread(check_pwned, check_field.value)
+        
+        if result == -1:
+            leak_result_text.value = TEXTS[state["lang"]]["leak_error"]
+            leak_result_text.color = ft.Colors.RED
+        elif result == 0:
+            leak_result_text.value = TEXTS[state["lang"]]["leak_safe"]
+            leak_result_text.color = ft.Colors.GREEN
+        else:
+            leak_result_text.value = TEXTS[state["lang"]]["leak_found"].format(result)
+            leak_result_text.color = ft.Colors.RED
+        page.update()
+
     check_field.on_change = check_my_pwd
+    leak_btn.on_click = do_leak_check
+    
     tab_check = ft.Column([
         ft.Text("🔍", size=40, text_align=ft.TextAlign.CENTER),
         check_field,
-        check_result_text
+        check_result_text,
+        ft.Divider(height=10, color="transparent"),
+        leak_btn,
+        leak_result_text
     ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=20)
 
-    # --- ВКЛАДКА 3: ИНФО (Просто текст) ---
-    # ⚠️ ВАЖНО: Создаем переменные ДО функции update_ui_texts
+    # --- ВКЛАДКА 3: ИНФО ---
     info_name = ft.Text("Евгений (makas)", size=22, weight=ft.FontWeight.BOLD)
     info_desc = ft.Text(TEXTS[state["lang"]]["about_me"], size=16, color=ft.Colors.GREY_400)
     
@@ -207,7 +266,7 @@ def main(page: ft.Page):
         gh_label, 
         gh_text,
         ft.Divider(height=20, color="transparent"), 
-        ft.Text("PasswordGen v2.3", size=14, color=ft.Colors.GREY_400), 
+        ft.Text("PasswordGen v2.5", size=14, color=ft.Colors.GREY_400), 
         app_desc
     ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
 
@@ -268,6 +327,7 @@ def main(page: ft.Page):
         check_field.label = TEXTS[state["lang"]]["check_hint"]
         tg_label.value = TEXTS[state["lang"]]["tg_label"]
         gh_label.value = TEXTS[state["lang"]]["gh_label"]
+        leak_btn.content = TEXTS[state["lang"]]["check_leak_btn"]
         page.update()
 
     def toggle_lang(e):
