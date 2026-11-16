@@ -6,7 +6,6 @@ import os
 import platform
 import datetime
 
-# --- БЕЗОПАСНЫЙ ПУТЬ ДЛЯ СОХРАНЕНИЯ ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(BASE_DIR, "passwordgen_history.json")
 
@@ -23,7 +22,7 @@ TEXTS = {
         "check_result": "Надежность: {}% ({})",
         "tg_label": "Телеграм канал создателя:", "gh_label": "GitHub создателя:",
         "copy_logs": "Скопировать логи", "logs_copied": "Логи скопированы!",
-        "clear_data": "Очистить историю", "confirm_clear": "Вы уверены, что хотите удалить историю?"
+        "support_btn": "Написать в поддержку", "support_copied": "Ссылка на Telegram скопирована! Напишите нам."
     },
     "en": {
         "title": "🔐 Password Generator", "app_title": "PasswordGen", "gen_btn": "Generate",
@@ -37,7 +36,7 @@ TEXTS = {
         "check_result": "Strength: {}% ({})",
         "tg_label": "Creator's Telegram channel:", "gh_label": "Creator's GitHub:",
         "copy_logs": "Copy logs", "logs_copied": "Logs copied!",
-        "clear_data": "Clear history", "confirm_clear": "Are you sure you want to clear history?"
+        "support_btn": "Contact Support", "support_copied": "Telegram link copied! Write to us."
     }
 }
 
@@ -232,13 +231,14 @@ def main(page: ft.Page):
         page.snack_bar.open = True
         page.update()
 
-    btn_copy_logs = ft.Button(
-        TEXTS[current_lang]["copy_logs"], 
-        icon=ft.Icons.BUG_REPORT, 
-        on_click=lambda e: page.run_task(copy_logs, e), 
-        bgcolor=ft.Colors.GREY_700, 
-        color=ft.Colors.WHITE
-    )
+    async def copy_support(e):
+        await ft.Clipboard().set("https://t.me/makas_ik")
+        page.snack_bar = ft.SnackBar(content=ft.Text(TEXTS[current_lang]["support_copied"], color=ft.Colors.WHITE), bgcolor=ft.Colors.BLUE_800)
+        page.snack_bar.open = True
+        page.update()
+
+    btn_copy_logs = ft.Button(TEXTS[current_lang]["copy_logs"], icon=ft.Icons.BUG_REPORT, on_click=lambda e: page.run_task(copy_logs, e), bgcolor=ft.Colors.GREY_700, color=ft.Colors.WHITE)
+    btn_support = ft.Button(TEXTS[current_lang]["support_btn"], icon=ft.Icons.SUPPORT_AGENT, on_click=lambda e: page.run_task(copy_support, e), bgcolor=ft.Colors.BLUE_700, color=ft.Colors.WHITE)
     
     tab_info = ft.Column([
         ft.Icon(ft.Icons.PERSON, size=80), 
@@ -254,7 +254,9 @@ def main(page: ft.Page):
         ft.Text("PasswordGen v2.6", size=14, color=ft.Colors.GREY_400), 
         app_desc,
         ft.Divider(height=15, color="transparent"),
-        btn_copy_logs
+        btn_copy_logs,
+        ft.Divider(height=10, color="transparent"),
+        btn_support
     ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
 
     # --- ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ---
@@ -276,7 +278,6 @@ def main(page: ft.Page):
         ft.Button(content=txt_btn_info, on_click=lambda e: switch_tab(2), width=100),
     ], alignment=ft.MainAxisAlignment.CENTER, spacing=10)
 
-    # --- ТЕМЫ И ЯЗЫК ---
     def apply_theme():
         t = THEMES[current_theme]
         page.bgcolor = t["bg"]
@@ -318,6 +319,7 @@ def main(page: ft.Page):
         tg_label.value = TEXTS[current_lang]["tg_label"]
         gh_label.value = TEXTS[current_lang]["gh_label"]
         btn_copy_logs.content = TEXTS[current_lang]["copy_logs"]
+        btn_support.content = TEXTS[current_lang]["support_btn"]
         page.update()
 
     page.appbar = ft.AppBar(
