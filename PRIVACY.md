@@ -28,5 +28,5 @@
 
 ## 7. Контакты
 Если у вас есть вопросы, вы можете связаться с разработчиком:
-- Telegram: https://t.me/makas_1337
+- Telegram: https://t.me/makas_ikk
 - GitHub: https://github.com/makas-innnn
