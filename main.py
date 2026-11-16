@@ -5,6 +5,7 @@ import json
 import os
 import platform
 import datetime
+import asyncio  # Для паузы при смене текста кнопки
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(BASE_DIR, "passwordgen_history.json")
@@ -22,7 +23,7 @@ TEXTS = {
         "check_result": "Надежность: {}% ({})",
         "tg_label": "Телеграм канал создателя:", "gh_label": "GitHub создателя:",
         "copy_logs": "Скопировать логи", "logs_copied": "Логи скопированы!",
-        "support_btn": "Написать в поддержку", "support_copied": "Ссылка на Telegram скопирована! Напишите нам."
+        "support_btn": "Написать в поддержку", "support_copied": "✅ Скопировано!"
     },
     "en": {
         "title": "🔐 Password Generator", "app_title": "PasswordGen", "gen_btn": "Generate",
@@ -36,7 +37,7 @@ TEXTS = {
         "check_result": "Strength: {}% ({})",
         "tg_label": "Creator's Telegram channel:", "gh_label": "Creator's GitHub:",
         "copy_logs": "Copy logs", "logs_copied": "Logs copied!",
-        "support_btn": "Contact Support", "support_copied": "Telegram link copied! Write to us."
+        "support_btn": "Contact Support", "support_copied": "✅ Copied!"
     }
 }
 
@@ -119,11 +120,14 @@ def main(page: ft.Page):
     history_title = ft.Text(TEXTS[current_lang]["history"], size=16, weight=ft.FontWeight.BOLD)
     history_col = ft.Column(spacing=5)
 
-    async def copy_to_clipboard(val, msg):
+    async def copy_to_clipboard(val, btn, original_text):
         if not val: return
         await ft.Clipboard().set(val)
-        page.snack_bar = ft.SnackBar(content=ft.Text(msg, color=ft.Colors.WHITE), bgcolor=ft.Colors.GREEN_800)
-        page.snack_bar.open = True
+        # Меняем текст кнопки на 2 секунды
+        btn.content = TEXTS[current_lang]["support_copied"]
+        page.update()
+        await asyncio.sleep(2)
+        btn.content = original_text
         page.update()
 
     def update_history_ui():
@@ -132,7 +136,7 @@ def main(page: ft.Page):
             row = ft.Row([
                 ft.Text(p, size=14, color=ft.Colors.GREY_400),
                 ft.IconButton(ft.Icons.COPY, icon_size=16, tooltip="Копировать",
-                    on_click=lambda e, val=p: page.run_task(copy_to_clipboard, val, TEXTS[current_lang]["copied"]))
+                    on_click=lambda e, val=p: page.run_task(copy_to_clipboard, val, ft.Text(""), ""))
             ], alignment=ft.MainAxisAlignment.CENTER)
             history_col.controls.append(row)
 
@@ -171,7 +175,7 @@ def main(page: ft.Page):
 
     eye_icon.on_click = toggle_visibility
     btn_gen.on_click = generate
-    btn_copy.on_click = lambda e: page.run_task(copy_to_clipboard, real_password, TEXTS[current_lang]["copied"])
+    btn_copy.on_click = lambda e: page.run_task(copy_to_clipboard, real_password, btn_copy, TEXTS[current_lang]["copy_btn"])
 
     pwd_row = ft.Row([pwd_field, eye_icon], alignment=ft.MainAxisAlignment.CENTER)
     tab_gen = ft.Column([
@@ -227,14 +231,20 @@ def main(page: ft.Page):
             f"----------------------"
         )
         await ft.Clipboard().set(sys_info)
-        page.snack_bar = ft.SnackBar(content=ft.Text(TEXTS[current_lang]["logs_copied"], color=ft.Colors.WHITE), bgcolor=ft.Colors.GREEN_800)
-        page.snack_bar.open = True
+        # Меняем текст кнопки логов
+        btn_copy_logs.content = TEXTS[current_lang]["support_copied"]
+        page.update()
+        await asyncio.sleep(2)
+        btn_copy_logs.content = TEXTS[current_lang]["copy_logs"]
         page.update()
 
     async def copy_support(e):
         await ft.Clipboard().set("https://t.me/makas_ik")
-        page.snack_bar = ft.SnackBar(content=ft.Text(TEXTS[current_lang]["support_copied"], color=ft.Colors.WHITE), bgcolor=ft.Colors.BLUE_800)
-        page.snack_bar.open = True
+        # Меняем текст кнопки поддержки
+        btn_support.content = TEXTS[current_lang]["support_copied"]
+        page.update()
+        await asyncio.sleep(2)
+        btn_support.content = TEXTS[current_lang]["support_btn"]
         page.update()
 
     btn_copy_logs = ft.Button(TEXTS[current_lang]["copy_logs"], icon=ft.Icons.BUG_REPORT, on_click=lambda e: page.run_task(copy_logs, e), bgcolor=ft.Colors.GREY_700, color=ft.Colors.WHITE)
@@ -251,7 +261,7 @@ def main(page: ft.Page):
         gh_label, 
         gh_text,
         ft.Divider(height=20, color="transparent"), 
-        ft.Text("PasswordGen v2.6", size=14, color=ft.Colors.GREY_400), 
+        ft.Text("PasswordGen v2.7", size=14, color=ft.Colors.GREY_400), 
         app_desc,
         ft.Divider(height=15, color="transparent"),
         btn_copy_logs,
