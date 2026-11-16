@@ -10,9 +10,8 @@ TEXTS = {
         "copy_btn": "Копировать", "length": "Длина пароля:", "digits": "Цифры (0-9)",
         "symbols": "Спецсимволы (!@#$)", "no_confusing": "Без похожих (l, 1, O)",
         "copied": "Пароль скопирован!", "nav_gen": "Генератор", "nav_info": "Инфо",
-        "about_me": "Начинающий кодер, делаю что в кайф", "tg": "Telegram", "github": "GitHub",
+        "about_me": "Начинающий кодер, делаю что в кайф", 
         "app_desc": "Безопасный офлайн-генератор.\nДанные не покидают устройство.",
-        "tg_copied": "Ссылка на Telegram скопирована!", "gh_copied": "Ссылка на GitHub скопирована!",
         "history": "История (последние 5)",
         "check_btn": "Проверить свой пароль", "check_hint": "Введите пароль для проверки...",
         "check_result": "Надежность: {}% ({})", "nav_check": "Проверка",
@@ -23,9 +22,8 @@ TEXTS = {
         "copy_btn": "Copy", "length": "Password length:", "digits": "Digits (0-9)",
         "symbols": "Symbols (!@#$)", "no_confusing": "No confusing (l, 1, O)",
         "copied": "Password copied!", "nav_gen": "Generator", "nav_info": "Info",
-        "about_me": "Beginner coder, doing what I love", "tg": "Telegram", "github": "GitHub",
+        "about_me": "Beginner coder, doing what I love", 
         "app_desc": "Secure offline generator.\nData never leaves your device.",
-        "tg_copied": "Telegram link copied!", "gh_copied": "GitHub link copied!",
         "history": "History (last 5)",
         "check_btn": "Check your password", "check_hint": "Enter password to check...",
         "check_result": "Strength: {}% ({})", "nav_check": "Check",
@@ -185,36 +183,29 @@ def main(page: ft.Page):
         check_result_text
     ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=20)
 
-    # --- ВКЛАДКА 3: ИНФО (Текст-ссылки) ---
+    # --- ВКЛАДКА 3: ИНФО (Просто текст) ---
+    # ⚠️ ВАЖНО: Создаем переменные ДО функции update_ui_texts
     info_name = ft.Text("Евгений (makas)", size=22, weight=ft.FontWeight.BOLD)
     info_desc = ft.Text(TEXTS[state["lang"]]["about_me"], size=16, color=ft.Colors.GREY_400)
     
-    # Просто текст с on_click (без асинхронных run_task для надежности)
-    link_tg = ft.Text(
-        "https://t.me/makas_1337", 
-        size=16, 
-        color=ft.Colors.BLUE_400, 
-        weight=ft.FontWeight.BOLD,
-        on_click=lambda e: page.launch_url("https://t.me/makas_1337")
-    )
-    link_gh = ft.Text(
-        "https://github.com/makas-innnn", 
-        size=16, 
-        color=ft.Colors.BLUE_400, 
-        weight=ft.FontWeight.BOLD,
-        on_click=lambda e: page.launch_url("https://github.com/makas-innnn")
-    )
+    tg_label = ft.Text(TEXTS[state["lang"]]["tg_label"], size=14, color=ft.Colors.GREY_500)
+    tg_text = ft.Text("https://t.me/makas_1337", size=16, color=ft.Colors.BLUE_400, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER)
+    
+    gh_label = ft.Text(TEXTS[state["lang"]]["gh_label"], size=14, color=ft.Colors.GREY_500)
+    gh_text = ft.Text("https://github.com/makas-innnn", size=16, color=ft.Colors.BLUE_400, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER)
     
     app_desc = ft.Text(TEXTS[state["lang"]]["app_desc"], size=14, text_align=ft.TextAlign.CENTER)
     
     tab_info = ft.Column([
-        ft.Icon(ft.Icons.PERSON, size=80), info_name, info_desc, 
+        ft.Icon(ft.Icons.PERSON, size=80), 
+        info_name, 
+        info_desc, 
+        ft.Divider(height=15, color="transparent"),
+        tg_label, 
+        tg_text,
         ft.Divider(height=10, color="transparent"),
-        ft.Text(TEXTS[state["lang"]]["tg_label"], size=14, color=ft.Colors.GREY_500),
-        link_tg,
-        ft.Divider(height=10, color="transparent"),
-        ft.Text(TEXTS[state["lang"]]["gh_label"], size=14, color=ft.Colors.GREY_500),
-        link_gh,
+        gh_label, 
+        gh_text,
         ft.Divider(height=20, color="transparent"), 
         ft.Text("PasswordGen v2.3", size=14, color=ft.Colors.GREY_400), 
         app_desc
@@ -282,22 +273,6 @@ def main(page: ft.Page):
     def toggle_lang(e):
         state["lang"] = "en" if state["lang"] == "ru" else "ru"
         update_ui_texts()
-
-    # Для смены текста подписей (создаем переменные для update_ui_texts)
-    tg_label = ft.Text(TEXTS[state["lang"]]["tg_label"], size=14, color=ft.Colors.GREY_500)
-    gh_label = ft.Text(TEXTS[state["lang"]]["gh_label"], size=14, color=ft.Colors.GREY_500)
-    
-    # Пересобираем tab_info с этими переменными
-    tab_info = ft.Column([
-        ft.Icon(ft.Icons.PERSON, size=80), info_name, info_desc, 
-        ft.Divider(height=10, color="transparent"),
-        tg_label, link_tg,
-        ft.Divider(height=10, color="transparent"),
-        gh_label, link_gh,
-        ft.Divider(height=20, color="transparent"), 
-        ft.Text("PasswordGen v2.3", size=14, color=ft.Colors.GREY_400), 
-        app_desc
-    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
 
     page.appbar = ft.AppBar(
         title=ft.Text(TEXTS[state["lang"]]["app_title"]),
