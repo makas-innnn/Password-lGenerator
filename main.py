@@ -1,6 +1,7 @@
 import flet as ft
 import random
 import string
+import json
 
 # --- ПЕРЕВОДЫ ---
 TEXTS = {
@@ -12,7 +13,9 @@ TEXTS = {
         "about_me": "Начинающий кодер, делаю что в кайф", "tg": "Telegram", "github": "GitHub",
         "app_desc": "Безопасный офлайн-генератор.\nДанные не покидают устройство.",
         "tg_copied": "Ссылка на Telegram скопирована!", "gh_copied": "Ссылка на GitHub скопирована!",
-        "history": "История (последние 5)"
+        "history": "История (последние 5)",
+        "check_btn": "Проверить свой пароль", "check_hint": "Введите пароль для проверки...",
+        "check_result": "Надежность: {}% ({})", "nav_check": "Проверка"
     },
     "en": {
         "title": "🔐 Password Generator", "app_title": "PasswordGen", "gen_btn": "Generate",
@@ -22,10 +25,13 @@ TEXTS = {
         "about_me": "Beginner coder, doing what I love", "tg": "Telegram", "github": "GitHub",
         "app_desc": "Secure offline generator.\nData never leaves your device.",
         "tg_copied": "Telegram link copied!", "gh_copied": "GitHub link copied!",
-        "history": "History (last 5)"
+        "history": "History (last 5)",
+        "check_btn": "Check your password", "check_hint": "Enter password to check...",
+        "check_result": "Strength: {}% ({})", "nav_check": "Check"
     }
 }
 
+# --- ТЕМЫ ---
 THEMES = {
     "dark": {"bg": ft.Colors.SURFACE, "title": ft.Colors.PURPLE_400, "border": ft.Colors.RED_400, "btn": ft.Colors.BLUE, "slider": ft.Colors.PURPLE_400, "nav_bg": ft.Colors.SURFACE_CONTAINER_HIGHEST},
     "light": {"bg": ft.Colors.WHITE, "title": ft.Colors.PURPLE_700, "border": ft.Colors.RED_400, "btn": ft.Colors.BLUE_700, "slider": ft.Colors.PURPLE_700, "nav_bg": ft.Colors.GREY_200},
@@ -57,12 +63,19 @@ def main(page: ft.Page):
     page.title = "PasswordGen"
     page.padding = 20
     
-    # Храним состояние в изменяемом словаре, чтобы избежать nonlocal
     state = {"lang": "ru", "theme": "dark", "pwd": "", "history": []}
+
+    # Безопасная загрузка истории (без await)
+    try:
+        saved_hist = page.client_storage.get("history")
+        if saved_hist:
+            state["history"] = json.loads(saved_hist)
+    except Exception:
+        pass
 
     title_text = ft.Text(TEXTS[state["lang"]]["title"], size=28, weight=ft.FontWeight.BOLD)
     
-    # --- ВКЛАДКА 1 ---
+    # --- ВКЛАДКА 1: ГЕНЕРАТОР ---
     pwd_field = ft.TextField(value="", read_only=True, text_align=ft.TextAlign.CENTER, text_size=20)
     eye_icon = ft.IconButton(ft.Icons.VISIBILITY, tooltip="Скрыть/Показать")
     strength_bar = ft.ProgressBar(width=300, value=0, bgcolor=ft.Colors.GREY_800, color=ft.Colors.RED)
@@ -87,10 +100,22 @@ def main(page: ft.Page):
     history_title = ft.Text(TEXTS[state["lang"]]["history"], size=16, weight=ft.FontWeight.BOLD)
     history_col = ft.Column(spacing=5)
 
+    async def copy_to_clipboard(val, msg):
+        if not val: return
+        await ft.Clipboard().set(val)
+        page.snack_bar = ft.SnackBar(content=ft.Text(msg, color=ft.Colors.WHITE), bgcolor=ft.Colors.GREEN_800)
+        page.snack_bar.open = True
+        page.update()
+
     def update_history_ui():
         history_col.controls.clear()
         for p in state["history"]:
-            history_col.controls.append(ft.Text(p, size=14, color=ft.Colors.GREY_400))
+            row = ft.Row([
+                ft.Text(p, size=14, color=ft.Colors.GREY_400),
+                ft.IconButton(ft.Icons.COPY, icon_size=16, tooltip="Копировать",
+                    on_click=lambda e, val=p: page.run_task(copy_to_clipboard, val, TEXTS[state["lang"]]["copied"]))
+            ], alignment=ft.MainAxisAlignment.CENTER)
+            history_col.controls.append(row)
 
     def toggle_visibility(e):
         if pwd_field.password:
@@ -120,18 +145,17 @@ def main(page: ft.Page):
         state["history"].insert(0, state["pwd"])
         if len(state["history"]) > 5: state["history"].pop()
         update_history_ui()
+        
+        try:
+            page.client_storage.set("history", json.dumps(state["history"]))
+        except Exception:
+            pass
+            
         page.update()
-
-    async def copy_password(e):
-        if state["pwd"]:
-            await ft.Clipboard().set(state["pwd"])
-            page.snack_bar = ft.SnackBar(content=ft.Text(TEXTS[state["lang"]]["copied"], color=ft.Colors.WHITE), bgcolor=ft.Colors.GREEN_800)
-            page.snack_bar.open = True
-            page.update()
 
     eye_icon.on_click = toggle_visibility
     btn_gen.on_click = generate
-    btn_copy.on_click = lambda e: page.run_task(copy_password, e)
+    btn_copy.on_click = lambda e: page.run_task(copy_to_clipboard, state["pwd"], TEXTS[state["lang"]]["copied"])
 
     pwd_row = ft.Row([pwd_field, eye_icon], alignment=ft.MainAxisAlignment.CENTER)
     tab_gen = ft.Column([
@@ -142,7 +166,29 @@ def main(page: ft.Page):
         history_col
     ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
 
-    # --- ВКЛАДКА 2 ---
+    # --- ВКЛАДКА 2: ПРОВЕРКА СВОЕГО ПАРОЛЯ ---
+    check_field = ft.TextField(label=TEXTS[state["lang"]]["check_hint"], password=True, can_reveal_password=True, text_size=16)
+    check_result_text = ft.Text("", size=16, weight=ft.FontWeight.BOLD)
+
+    def check_my_pwd(e):
+        if not check_field.value:
+            check_result_text.value = ""
+            page.update()
+            return
+        sc, st, cl = analyze(check_field.value)
+        status_text = ("Надежный" if st == "Strong" else ("Средний" if st == "Medium" else "Слабый")) if state["lang"] == "ru" else st
+        check_result_text.value = TEXTS[state["lang"]]["check_result"].format(sc, status_text)
+        check_result_text.color = cl
+        page.update()
+
+    check_field.on_change = check_my_pwd
+    tab_check = ft.Column([
+        ft.Text("🔍", size=40, text_align=ft.TextAlign.CENTER),
+        check_field,
+        check_result_text
+    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=20)
+
+    # --- ВКЛАДКА 3: ИНФО ---
     async def copy_link(url, text_key):
         await ft.Clipboard().set(url)
         page.snack_bar = ft.SnackBar(content=ft.Text(TEXTS[state["lang"]][text_key], color=ft.Colors.WHITE), bgcolor=ft.Colors.BLUE_700)
@@ -159,33 +205,36 @@ def main(page: ft.Page):
     
     tab_info = ft.Column([
         ft.Icon(ft.Icons.PERSON, size=80), info_name, info_desc, btn_tg, btn_gh, 
-        ft.Divider(height=20, color="transparent"), ft.Text("PasswordGen v2.1", size=14, color=ft.Colors.GREY_400), app_desc
+        ft.Divider(height=20, color="transparent"), ft.Text("PasswordGen v2.3", size=14, color=ft.Colors.GREY_400), app_desc
     ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
 
-    # --- ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК (ЧЕРЕЗ КОНТЕЙНЕР) ---
-    # Контейнер, в который мы будем класть либо tab_gen, либо tab_info
+    # --- ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ---
     content_container = ft.Container(expand=True, content=tab_gen)
 
     def switch_tab(index):
         if index == 0:
             content_container.content = tab_gen
+        elif index == 1:
+            content_container.content = tab_check
         else:
             content_container.content = tab_info
         page.update()
 
     txt_btn_gen = ft.Text("Генератор")
+    txt_btn_check = ft.Text("Проверка")
     txt_btn_info = ft.Text("Инфо")
     
     tabs_row = ft.Row(
         controls=[
-            ft.Button(content=txt_btn_gen, on_click=lambda e: switch_tab(0), width=150),
-            ft.Button(content=txt_btn_info, on_click=lambda e: switch_tab(1), width=150),
+            ft.Button(content=txt_btn_gen, on_click=lambda e: switch_tab(0), width=100),
+            ft.Button(content=txt_btn_check, on_click=lambda e: switch_tab(1), width=100),
+            ft.Button(content=txt_btn_info, on_click=lambda e: switch_tab(2), width=100),
         ],
         alignment=ft.MainAxisAlignment.CENTER,
         spacing=10
     )
 
-    # --- ТЕМЫ ---
+    # --- ТЕМЫ И ЯЗЫК ---
     def apply_theme():
         t = THEMES[state["theme"]]
         page.bgcolor = t["bg"]
@@ -215,12 +264,14 @@ def main(page: ft.Page):
         btn_gen.content = TEXTS[state["lang"]]["gen_btn"]
         btn_copy.content = TEXTS[state["lang"]]["copy_btn"]
         txt_btn_gen.value = TEXTS[state["lang"]]["nav_gen"]
+        txt_btn_check.value = TEXTS[state["lang"]]["nav_check"]
         txt_btn_info.value = TEXTS[state["lang"]]["nav_info"]
         info_desc.value = TEXTS[state["lang"]]["about_me"]
         btn_tg.content = TEXTS[state["lang"]]["tg"]
         btn_gh.content = TEXTS[state["lang"]]["github"]
         app_desc.value = TEXTS[state["lang"]]["app_desc"]
         history_title.value = TEXTS[state["lang"]]["history"]
+        check_field.label = TEXTS[state["lang"]]["check_hint"]
         page.update()
 
     def toggle_lang(e):
@@ -245,5 +296,6 @@ def main(page: ft.Page):
     )
     
     apply_theme()
+    update_history_ui()
 
 ft.run(main)
