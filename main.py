@@ -19,7 +19,7 @@ TEXTS = {
         "history": "История (последние 5)",
         "check_btn": "Проверить свой пароль", "check_hint": "Введите пароль для проверки...",
         "check_result": "Надежность: {}% ({})", "nav_check": "Проверка",
-        "tg_label": "Телеграм канал создателя:", "gh_label": "GitHub создателя:",
+        "tg_channel_label": "Телеграм-канал:", "tg_dm_label": "Связь (ЛС):", "gh_label": "GitHub:",
         "check_leak_btn": "Проверить на утечки", "leak_checking": "Проверяем базы утечек...",
         "leak_safe": "✅ Пароль не найден в утечках!", "leak_found": "⚠️ Пароль найден в утечках {} раз!",
         "leak_error": "❌ Ошибка подключения к интернету."
@@ -34,7 +34,7 @@ TEXTS = {
         "history": "History (last 5)",
         "check_btn": "Check your password", "check_hint": "Enter password to check...",
         "check_result": "Strength: {}% ({})", "nav_check": "Check",
-        "tg_label": "Creator's Telegram channel:", "gh_label": "Creator's GitHub:",
+        "tg_channel_label": "Telegram channel:", "tg_dm_label": "Contact (DM):", "gh_label": "GitHub:",
         "check_leak_btn": "Check for leaks", "leak_checking": "Checking leak databases...",
         "leak_safe": "✅ Password not found in leaks!", "leak_found": "⚠️ Password found in leaks {} times!",
         "leak_error": "❌ Error connecting to the internet."
@@ -69,13 +69,12 @@ def analyze(pwd):
     s = min(s, 100)
     return (s, "Strong", ft.Colors.GREEN) if s >= 85 else ((s, "Medium", ft.Colors.ORANGE) if s >= 60 else (s, "Weak", ft.Colors.RED))
 
-# --- ФУНКЦИЯ ПРОВЕРКИ УТЕЧЕК (Безопасная для Android) ---
+# --- ФУНКЦИЯ ПРОВЕРКИ УТЕЧЕК ---
 def check_pwned(password):
     sha1_hash = hashlib.sha1(password.encode()).hexdigest().upper()
     prefix, suffix = sha1_hash[:5], sha1_hash[5:]
     url = f"https://api.pwnedpasswords.com/range/{prefix}"
     
-    # Создаем контекст SSL, который не блокирует запросы на Android
     context = ssl.create_default_context()
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE
@@ -243,15 +242,18 @@ def main(page: ft.Page):
         leak_result_text
     ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=20)
 
-    # --- ВКЛАДКА 3: ИНФО ---
+    # --- ВКЛАДКА 3: ИНФО (Разделенные контакты) ---
     info_name = ft.Text("Евгений (makas)", size=22, weight=ft.FontWeight.BOLD)
     info_desc = ft.Text(TEXTS[state["lang"]]["about_me"], size=16, color=ft.Colors.GREY_400)
     
-    tg_label = ft.Text(TEXTS[state["lang"]]["tg_label"], size=14, color=ft.Colors.GREY_500)
-    tg_text = ft.Text("https://t.me/makas_1337", size=16, color=ft.Colors.BLUE_400, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER)
+    tg_channel_label = ft.Text(TEXTS[state["lang"]]["tg_channel_label"], size=14, color=ft.Colors.GREY_500)
+    tg_channel_text = ft.Text("https://t.me/makas_1337", size=16, color=ft.Colors.BLUE_400, weight=ft.FontWeight.BOLD)
+    
+    tg_dm_label = ft.Text(TEXTS[state["lang"]]["tg_dm_label"], size=14, color=ft.Colors.GREY_500)
+    tg_dm_text = ft.Text("https://t.me/makas_ik", size=16, color=ft.Colors.BLUE_400, weight=ft.FontWeight.BOLD)
     
     gh_label = ft.Text(TEXTS[state["lang"]]["gh_label"], size=14, color=ft.Colors.GREY_500)
-    gh_text = ft.Text("https://github.com/makas-innnn", size=16, color=ft.Colors.BLUE_400, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER)
+    gh_text = ft.Text("https://github.com/makas-innnn", size=16, color=ft.Colors.BLUE_400, weight=ft.FontWeight.BOLD)
     
     app_desc = ft.Text(TEXTS[state["lang"]]["app_desc"], size=14, text_align=ft.TextAlign.CENTER)
     
@@ -260,8 +262,11 @@ def main(page: ft.Page):
         info_name, 
         info_desc, 
         ft.Divider(height=15, color="transparent"),
-        tg_label, 
-        tg_text,
+        tg_channel_label, 
+        tg_channel_text,
+        ft.Divider(height=10, color="transparent"),
+        tg_dm_label, 
+        tg_dm_text,
         ft.Divider(height=10, color="transparent"),
         gh_label, 
         gh_text,
@@ -325,7 +330,8 @@ def main(page: ft.Page):
         app_desc.value = TEXTS[state["lang"]]["app_desc"]
         history_title.value = TEXTS[state["lang"]]["history"]
         check_field.label = TEXTS[state["lang"]]["check_hint"]
-        tg_label.value = TEXTS[state["lang"]]["tg_label"]
+        tg_channel_label.value = TEXTS[state["lang"]]["tg_channel_label"]
+        tg_dm_label.value = TEXTS[state["lang"]]["tg_dm_label"]
         gh_label.value = TEXTS[state["lang"]]["gh_label"]
         leak_btn.content = TEXTS[state["lang"]]["check_leak_btn"]
         page.update()
