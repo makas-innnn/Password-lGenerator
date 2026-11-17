@@ -5,7 +5,10 @@ import json
 import os
 import platform
 import datetime
-import asyncio  # Для паузы при смене текста кнопки
+import asyncio
+import hashlib
+import urllib.request
+import ssl
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(BASE_DIR, "passwordgen_history.json")
@@ -23,7 +26,10 @@ TEXTS = {
         "check_result": "Надежность: {}% ({})",
         "tg_label": "Телеграм канал создателя:", "gh_label": "GitHub создателя:",
         "copy_logs": "Скопировать логи", "logs_copied": "Логи скопированы!",
-        "support_btn": "Написать в поддержку", "support_copied": "✅ Скопировано!"
+        "support_btn": "Написать в поддержку", "support_copied": "✅ Скопировано!",
+        "check_leak_btn": "Проверить на утечки", "leak_checking": "Проверяем базы утечек...",
+        "leak_safe": "✅ Пароль не найден в утечках!", "leak_found": "⚠️ Пароль найден в утечках {} раз!",
+        "leak_error": "❌ Ошибка подключения к интернету."
     },
     "en": {
         "title": "🔐 Password Generator", "app_title": "PasswordGen", "gen_btn": "Generate",
@@ -37,7 +43,10 @@ TEXTS = {
         "check_result": "Strength: {}% ({})",
         "tg_label": "Creator's Telegram channel:", "gh_label": "Creator's GitHub:",
         "copy_logs": "Copy logs", "logs_copied": "Logs copied!",
-        "support_btn": "Contact Support", "support_copied": "✅ Copied!"
+        "support_btn": "Contact Support", "support_copied": "✅ Copied!",
+        "check_leak_btn": "Check for leaks", "leak_checking": "Checking leak databases...",
+        "leak_safe": "✅ Password not found in leaks!", "leak_found": "⚠️ Password found in leaks {} times!",
+        "leak_error": "❌ Error connecting to the internet."
     }
 }
 
@@ -82,6 +91,26 @@ def analyze(pwd):
     s = min(s, 100)
     return (s, "Strong", ft.Colors.GREEN) if s >= 85 else ((s, "Medium", ft.Colors.ORANGE) if s >= 60 else (s, "Weak", ft.Colors.RED))
 
+def check_pwned(password):
+    sha1_hash = hashlib.sha1(password.encode()).hexdigest().upper()
+    prefix, suffix = sha1_hash[:5], sha1_hash[5:]
+    url = f"https://api.pwnedpasswords.com/range/{prefix}"
+    
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'PasswordGen-App'})
+        with urllib.request.urlopen(req, timeout=5, context=context) as response:
+            data = response.read().decode('utf-8')
+            for line in data.splitlines():
+                if line.startswith(suffix):
+                    return int(line.split(':')[1])
+    except Exception:
+        return -1
+    return 0
+
 def main(page: ft.Page):
     page.title = "PasswordGen"
     page.padding = 20
@@ -123,7 +152,6 @@ def main(page: ft.Page):
     async def copy_to_clipboard(val, btn, original_text):
         if not val: return
         await ft.Clipboard().set(val)
-        # Меняем текст кнопки на 2 секунды
         btn.content = TEXTS[current_lang]["support_copied"]
         page.update()
         await asyncio.sleep(2)
@@ -186,9 +214,12 @@ def main(page: ft.Page):
         history_col
     ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
 
-    # --- ВКЛАДКА 2: ПРОВЕРКА ---
+    # --- ВКЛАДКА 2: ПРОВЕРКА (С УТЕЧКАМИ) ---
     check_field = ft.TextField(label=TEXTS[current_lang]["check_hint"], password=True, can_reveal_password=True, text_size=16)
     check_result_text = ft.Text("", size=16, weight=ft.FontWeight.BOLD)
+    
+    leak_btn = ft.Button(content=TEXTS[current_lang]["check_leak_btn"], width=250, height=40, bgcolor=ft.Colors.ORANGE_700, color=ft.Colors.WHITE)
+    leak_result_text = ft.Text("", size=14, text_align=ft.TextAlign.CENTER)
 
     def check_my_pwd(e):
         if not check_field.value:
@@ -201,11 +232,36 @@ def main(page: ft.Page):
         check_result_text.color = cl
         page.update()
 
+    async def do_leak_check(e):
+        if not check_field.value:
+            return
+        leak_result_text.value = TEXTS[current_lang]["leak_checking"]
+        leak_result_text.color = ft.Colors.GREY_400
+        page.update()
+        
+        result = await asyncio.to_thread(check_pwned, check_field.value)
+        
+        if result == -1:
+            leak_result_text.value = TEXTS[current_lang]["leak_error"]
+            leak_result_text.color = ft.Colors.RED
+        elif result == 0:
+            leak_result_text.value = TEXTS[current_lang]["leak_safe"]
+            leak_result_text.color = ft.Colors.GREEN
+        else:
+            leak_result_text.value = TEXTS[current_lang]["leak_found"].format(result)
+            leak_result_text.color = ft.Colors.RED
+        page.update()
+
     check_field.on_change = check_my_pwd
+    leak_btn.on_click = do_leak_check
+    
     tab_check = ft.Column([
         ft.Text("🔍", size=40, text_align=ft.TextAlign.CENTER),
         check_field,
-        check_result_text
+        check_result_text,
+        ft.Divider(height=10, color="transparent"),
+        leak_btn,
+        leak_result_text
     ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=20)
 
     # --- ВКЛАДКА 3: ИНФО ---
@@ -231,7 +287,6 @@ def main(page: ft.Page):
             f"----------------------"
         )
         await ft.Clipboard().set(sys_info)
-        # Меняем текст кнопки логов
         btn_copy_logs.content = TEXTS[current_lang]["support_copied"]
         page.update()
         await asyncio.sleep(2)
@@ -240,28 +295,28 @@ def main(page: ft.Page):
 
     async def copy_support(e):
         await ft.Clipboard().set("https://t.me/makas_ik")
-        # Меняем текст кнопки поддержки
         btn_support.content = TEXTS[current_lang]["support_copied"]
         page.update()
         await asyncio.sleep(2)
         btn_support.content = TEXTS[current_lang]["support_btn"]
         page.update()
 
-    btn_copy_logs = ft.Button(TEXTS[current_lang]["copy_logs"], icon=ft.Icons.BUG_REPORT, on_click=lambda e: page.run_task(copy_logs, e), bgcolor=ft.Colors.GREY_700, color=ft.Colors.WHITE)
-    btn_support = ft.Button(TEXTS[current_lang]["support_btn"], icon=ft.Icons.SUPPORT_AGENT, on_click=lambda e: page.run_task(copy_support, e), bgcolor=ft.Colors.BLUE_700, color=ft.Colors.WHITE)
+    btn_copy_logs = ft.Button(TEXTS[current_lang]["copy_logs"], icon=ft.Icons.BUG_REPORT, bgcolor=ft.Colors.GREY_700, color=ft.Colors.WHITE)
+    btn_support = ft.Button(TEXTS[current_lang]["support_btn"], icon=ft.Icons.SUPPORT_AGENT, bgcolor=ft.Colors.BLUE_700, color=ft.Colors.WHITE)
+    
+    btn_copy_logs.on_click = lambda e: page.run_task(copy_logs, e)
+    btn_support.on_click = lambda e: page.run_task(copy_support, e)
     
     tab_info = ft.Column([
         ft.Icon(ft.Icons.PERSON, size=80), 
         info_name, 
         info_desc, 
         ft.Divider(height=15, color="transparent"),
-        tg_label, 
-        tg_text,
+        tg_label, tg_text,
         ft.Divider(height=10, color="transparent"),
-        gh_label, 
-        gh_text,
+        gh_label, gh_text,
         ft.Divider(height=20, color="transparent"), 
-        ft.Text("PasswordGen v2.7", size=14, color=ft.Colors.GREY_400), 
+        ft.Text("PasswordGen v2.8", size=14, color=ft.Colors.GREY_400), 
         app_desc,
         ft.Divider(height=15, color="transparent"),
         btn_copy_logs,
@@ -330,6 +385,7 @@ def main(page: ft.Page):
         gh_label.value = TEXTS[current_lang]["gh_label"]
         btn_copy_logs.content = TEXTS[current_lang]["copy_logs"]
         btn_support.content = TEXTS[current_lang]["support_btn"]
+        leak_btn.content = TEXTS[current_lang]["check_leak_btn"]
         page.update()
 
     page.appbar = ft.AppBar(
